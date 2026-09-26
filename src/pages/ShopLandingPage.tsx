@@ -13,6 +13,16 @@
 // import { Card, Spinner } from "../components/ui";
 // import type { ShopDto, SectionDto } from "../lib/types";
 
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import type { NavigateFunction } from "react-router-dom";
+import { getShop } from "../lib/api";
+import { useT } from "../i18n/LanguageContext";
+import CustomerHeader from "../components/CustomerHeader";
+import ShopContact from "../components/ShopContact";
+import { Card, Spinner } from "../components/ui";
+import type { ShopDto, SectionDto } from "../lib/types";
+
 // Section type -> emoji (chhota visual cue)
 // Har industry type ke liye ek emoji map kiya gaya hai taaki card pe icon dikhaya ja sake
 const ICON: Record<string, string> = {
