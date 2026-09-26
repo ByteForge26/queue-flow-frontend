@@ -1,7 +1,35 @@
+/* ============================================================================
+   FILE: index.css
+   Ye file poori React application ki GLOBAL stylesheet hai.
+   main.tsx mein import hoti hai — sabhi components pe automatically apply hoti hai.
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------
+   SECTION 1: TAILWIND CSS DIRECTIVES
+   In teen lines se Tailwind ka poora framework initialize hota hai.
+   Bina inke koi bhi Tailwind class (flex, p-4, text-blue-500 etc.) kaam nahi karegi.
+   ---------------------------------------------------------------------- */
+
 @tailwind base;
+/* Browser default styles normalize karta hai — sab browsers mein same baseline mile */
+
 @tailwind components;
+/* Reusable component classes ke liye layer — future mein @layer components { } yahan add hongi */
+
 @tailwind utilities;
+/* Saari utility classes generate karta hai jo JSX mein use hoti hain */
+
+/* ----------------------------------------------------------------------
+   SECTION 2: GLOBAL BODY STYLES
+   Poori app ka default look-and-feel — har page aur component inhe inherit karta hai.
+   ---------------------------------------------------------------------- */
 
 body {
   @apply bg-gray-50 text-gray-900 antialiased;
+  /*
+    bg-gray-50    — Halka gray background (#f9fafb) — cards/modals white hone se
+                    better contrast milta hai pure white se
+    text-gray-900 — Almost black text (#111827) — pure black se zyada readable
+    antialiased   — Font rendering smooth karta hai, text crisp dikhta hai
+  */
 }
