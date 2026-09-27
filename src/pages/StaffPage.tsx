@@ -1,38 +1,37 @@
 // =====================================================================
 // StaffPage.tsx
-// (Header comment block collapsed in screenshots — original comments
-//  above this point were not visible and are not reconstructed here.
-//  Add your actual imports back, e.g.:)
 // =====================================================================
-// import { useState, useEffect, useCallback } from "react";
-// import { useParams, useNavigate } from "react-router-dom";
-// import { getAuth, clearAuth } from "../lib/auth";
-// import { useT } from "../i18n/LanguageContext";
-// import {
-//   getQueue,
-//   getFutureQueue,
-//   getStats,
-//   getStaffHistory,
-//   getFormConfig,
-//   getShop,
-//   updateStatus,
-//   markPaymentPending,
-// } from "../lib/api";
-// import { useStomp } from "../hooks/useStomp";
-// import { Button, Card, Spinner, StatusBadge } from "../components/ui";
-// import LanguageToggle from "../components/LanguageToggle";
-// import type {
-//   TicketDto,
-//   TicketItemDto,
-//   TicketStatus,
-//   DashboardStatsDto,
-//   HistoryDto,
-//   SectionDto,
-//   ShopDto,
-//   FormConfigDto,
-//   AuthDto,
-//   FieldValueDto,
-// } from "../lib/types";
+import React, { useState, useEffect, useCallback } from "react";
+import type { ChangeEvent, ReactElement as Element } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import type { NavigateFunction } from "react-router-dom";
+import { getAuth, clearAuth } from "../lib/auth";
+import { useT } from "../i18n/LanguageContext";
+import {
+  getQueue,
+  getFutureQueue,
+  getStats,
+  getStaffHistory,
+  getFormConfig,
+  getShop,
+  updateStatus,
+  markPaymentPending,
+} from "../lib/api";
+import { useStomp } from "../hooks/useStomp";
+import { Button, Card, Spinner, StatusBadge } from "../components/ui";
+import LanguageToggle from "../components/LanguageToggle";
+import type {
+  TicketDto,
+  TicketItemDto,
+  TicketStatus,
+  DashboardStatsDto,
+  HistoryDto,
+  SectionDto,
+  ShopDto,
+  FormConfigDto,
+  AuthDto,
+  FieldValueDto,
+} from "../lib/types";
 
 // Har status ke liye staff-facing action label key
 // Ye map batata hai: "agla status kya hoga" -> "button par kya likhna hai (translation key)"
@@ -736,7 +735,7 @@ function HistoryList({
   t: (key: string, vars?: Record<string, string | number>) => string;
 }): Element {
   // q — search input ka current value (naam / phone / order ID)
-  const [q, setQ] = useState("");
+  const [q, setQ] = React.useState("");
 
   // filtered — agar search query hai to match karo, warna saare orders dikhao
   // toLowerCase() isliye taaki case-insensitive search ho

@@ -543,7 +543,7 @@ export async function superAdminUnbanService(
 
 // SuperAdmin: audit log fetch karo - kaun ne kya kiya, kab kiya
 // Security aur compliance ke liye useful
-export async function superAdminAuditLog(): Promise<import("./types").AuditLogEntryDto[]> {
+export async function superAdminGetAuditLog(): Promise<import("./types").AuditLogEntryDto[]> {
   const { data } = await saApi.get("/audit-log");
   return data;
 }

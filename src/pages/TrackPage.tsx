@@ -1,4 +1,25 @@
 // ================================================================
+// TrackPage.tsx
+// ================================================================
+import { useState, useEffect, useCallback } from "react";
+import type { ReactElement as Element } from "react";
+import { useParams, Link } from "react-router-dom";
+import { useT } from "../i18n/LanguageContext";
+import { getTicket, getFormConfig, cancelTicket } from "../lib/api";
+import { getLocalOrders } from "../lib/auth";
+import { useStomp } from "../hooks/useStomp";
+import { Card, StatusBadge, Button, Spinner } from "../components/ui";
+import CustomerHeader from "../components/CustomerHeader";
+import ShopContact from "../components/ShopContact";
+import type {
+  TicketDto,
+  TicketItemDto,
+  FieldValueDto,
+  FormConfigDto,
+  LocalOrder,
+} from "../lib/types";
+
+// ================================================================
 // STEP_KEY
 //
 // Har ticket status ke liye i18n translation key ka mapping.
@@ -24,10 +45,14 @@ export default function TrackPage(): Element {
 
   // t() function — i18n translation ke liye;
   // key dedo, translated string milega
-  const t = (
-    key: string,
-    vars?: Record<string, string | number>
-  ) => useT()(key, vars);
+  //
+  // IMPORTANT: useT() ek Hook hai, isliye ise sirf EK baar,
+  // component ke top-level par call karna chahiye — na ki har
+  // baar jab t(key) use ho. Pehle ye har t(...) call par
+  // useT() ko dobara invoke kar raha tha, jisse render ke
+  // hisaab se Hook calls ki count badal jaati thi (Rules of
+  // Hooks violation -> "change in order of Hooks" error).
+  const t: (key: string, vars?: Record<string, string | number>) => string = useT();
 
   // ticketId string ko number mein convert karo
   // (API numeric ID expect karta hai)

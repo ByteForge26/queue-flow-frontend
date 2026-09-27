@@ -1,31 +1,29 @@
 // =====================================================================
 // SuperAdminPage.tsx
-// (Header comment block was collapsed in the screenshots — original
-//  imports/comments above this point were not visible and are not
-//  reconstructed here. Add your actual imports back, e.g.:)
 // =====================================================================
-// import { useState, useEffect } from "react";
-// import {
-//   superAdminLogin,
-//   superAdminListShops,
-//   getPlatformConfig,
-//   superAdminGetAuditLog,
-//   superAdminGetLockedIps,
-//   superAdminGetServiceBans,
-//   superAdminBanService,
-//   superAdminUnbanService,
-//   superAdminClearIpLock,
-//   superAdminSetCustomFieldsEnabled,
-//   superAdminSetTierSystemEnabled,
-//   superAdminSetShowPlanInfoIcon,
-//   superAdminSetShowPlanBadge,
-//   superAdminSetPaidPrice,
-//   superAdminBulkSetPlan,
-//   superAdminSetPlan,
-//   superAdminFetchQr,
-//   superAdminResetPassword,
-// } from "../lib/api";
-// import type { SuperAdminShopDto, AuditLogEntryDto, GlobalBanStatusDto } from "../lib/types";
+import { useState, useEffect } from "react";
+import type { ChangeEvent, KeyboardEvent, ReactElement as Element } from "react";
+import {
+  superAdminLogin,
+  superAdminListShops,
+  getPlatformConfig,
+  superAdminGetAuditLog,
+  superAdminGetLockedIps,
+  superAdminGetServiceBans,
+  superAdminBanService,
+  superAdminUnbanService,
+  superAdminClearIpLock,
+  superAdminSetCustomFieldsEnabled,
+  superAdminSetTierSystemEnabled,
+  superAdminSetShowPlanInfoIcon,
+  superAdminSetShowPlanBadge,
+  superAdminSetPaidPrice,
+  superAdminBulkSetPlan,
+  superAdminSetPlan,
+  superAdminFetchQr,
+  superAdminResetPassword,
+} from "../lib/api";
+import type { SuperAdminShopDto, AuditLogEntryDto, GlobalBanStatusDto } from "../lib/types";
 
 // LocalStorage me SuperAdmin ka auth token store karne ke liye key
 // Token yahan save hota hai taaki page refresh pe bhi login session bana rahe

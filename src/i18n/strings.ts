@@ -643,7 +643,7 @@ const hi: Dict = {
   "track.orderNo": "Order #{id}",
   "track.cancelled": "Ye order cancel ho gaya.",
   "track.cancelReason": "Wajah: {reason}",
-  "track.cancelWho": "Kise cancel kiya",
+  "track.cancelWho": "Kisne cancel kiya",
   "track.cancelStage": "Stage",
   "track.cancelByCustomer": "Aapne (Customer)",
   "track.cancelByStaff": "Staff",
