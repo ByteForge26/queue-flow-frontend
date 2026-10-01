@@ -103,13 +103,19 @@ import type {
   UpdateShopCommand,
 } from "./types";
 
+
+// API_BASE_URL: local dev mein "/api" (relative, Vite proxy use karte hain).
+// production mein "<backend-url>/api" (jab frontend/backend alag domains pe
+// deployed hain, dekho config.ts aur DEPLOY.md).
+import { API_BASE_URL } from "./config";
+
 // ============================================================================
 // MAIN API INSTANCE
 // ============================================================================
 // Ye saare regular (non-superadmin) API calls ke liye use hota hai.
 // baseURL "/api" matlab har request automatically "/api/..." pe jaayegi.
 // Example: api.get("/public/config") => GET /api/public/config
-const api: AxiosInstance = axios.create({ baseURL: "/api" });
+const api: AxiosInstance = axios.create({ baseURL: API_BASE_URL });
 
 // Har request pe JWT (agar logged in) attach karo
 // Request interceptor: har HTTP call jaane se PEHLE ye function chalega.
@@ -164,7 +170,7 @@ api.interceptors.response.use(
 // 1. Base URL alag hai (/api/superadmin)
 // 2. Token alag localStorage key ("sa_token") mein store hota hai
 // 3. Normal user ka token aur superadmin ka token mix nahi hona chahiye
-const saApi: AxiosInstance = axios.create({ baseURL: "/api/superadmin" });
+const saApi: AxiosInstance = axios.create({ baseURL: `${API_BASE_URL}/superadmin` });
 
 // SuperAdmin request interceptor: sa_token ko Authorization header mein lagao
 saApi.interceptors.request.use(

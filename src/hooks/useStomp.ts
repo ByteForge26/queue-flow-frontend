@@ -11,6 +11,14 @@ import { Client, type IMessage } from "@stomp/stompjs";
 // hai. Isliye seedha new WebSocket() ke bajaye new SockJS() use kiya gaya hai.
 import SockJS from "sockjs-client";
 
+// Config file se backend ka WebSocket URL import karte hain. Ye URL
+// environment variable (VITE_API_URL) ke hisaab se set hota hai – local dev ya
+// production server ke liye alag ho sakta hai.
+// WS_URL: backend ka WebSocket endpoint URL hai, e.g. "https://queueflow-backend.onrender.com/ws" ya local dev mein "/ws".
+// production mein "<backend-url>/ws" (jab frontend aur backend alag domains pe ho) ya local dev mein "/ws" (same origin) use hota hai.
+// dekh config.ts file for details.
+import { WS_URL } from "../lib/config";
+
 /**
  * Ek STOMP topic ko subscribe karta hai aur har message pe callback chalata hai.
  * Backend in-memory broker `/topic/...` pe publish karta hai.
@@ -61,7 +69,7 @@ export function useStomp(topic: string, onMessage: (body: any) => void): void {
             // webSocketFactory: SockJS factory function. STOMP library jab
             // connection kholna chahti hai to ye function call karti hai.
             // "/ws" – backend ka WebSocket endpoint URL (relative path, same origin).
-            webSocketFactory: (): WebSocket => new SockJS("/ws") as unknown as WebSocket,
+            webSocketFactory: (): WebSocket => new SockJS(WS_URL) as unknown as WebSocket,
 
             // reconnectDelay: agar connection toot jaye (network issue, server
             // restart) to 3000ms (3 seconds) baad automatic reconnect try karega.

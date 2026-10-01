@@ -1,0 +1,14 @@
+# Build settings — Netlify ko batata hai kaise build karna hai aur kya serve karna hai.
+[build]
+command = "npm run build"
+publish = "dist"
+
+# SPA rewrite rule — React Router client-side routing use karta hai, isliye
+# is rule ke bina kisi bhi route pe direct refresh/share karne pe Netlify
+# 404 dega. Ye rule sab paths ko index.html pe serve karta hai, React Router
+# andar se route decide karta hai. (vercel.json mein jo same kaam karta hai,
+# wahi logic yahan Netlify ke apne format mein.)
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
