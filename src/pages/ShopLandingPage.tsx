@@ -48,7 +48,7 @@ const SECTION_BORDER: Record<string, string> = {
   OTHER: "border-l-4 border-l-slate-400",
 };
 
-export default function ShopLandingPage(): Element {
+export default function ShopLandingPage() {
   // URL se shopCode nikalo — e.g. route /shop/:shopCode se "ABC123" milega
   const { shopCode = "" } = useParams();
 
@@ -115,7 +115,7 @@ export default function ShopLandingPage(): Element {
         {/* Har waqt dikhta hai — green agar shop open hai, amber/red agar closed ya off-hours */}
         {/* IIFE (Immediately Invoked Function Expression) use kiya taaki JSX ke andar
             thoda calculation logic (day number to label conversion) likh sakein */}
-        {(() : Element => {
+        {(() => {
           // DAY_SHORT: day number (1=Mon, 7=Sun) ko short name mein convert karta hai
           // Index 0 khaali hai kyunki days 1-indexed hain (Sunday = 7, Monday = 1)
           const DAY_SHORT: string[] = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -153,7 +153,7 @@ export default function ShopLandingPage(): Element {
         {/* === SECTIONS LIST === */}
         {/* Shop ke saare service sections (e.g. Haircut, Dine-In, OPD) cards ke roop mein */}
         <div className="space-y-3">
-          {shop.sections.map((s: SectionDto): Element => {
+          {shop.sections.map((s: SectionDto) => {
             // Section disabled hoga agar:
             // 1. Shop offline hai (!shop.open), ya
             // 2. Abhi business hours ke bahar hai (!shop.withinHours), ya
@@ -169,7 +169,7 @@ export default function ShopLandingPage(): Element {
                 }`}
                 // Disabled section pe click block karo (undefined pass karne se onClick nahi chalega)
                 // Enabled section pe: order page pe navigate karo, shop code bhi query param mein bhejo
-                onClick={disabled ? undefined : (): void => navigate(`/order/${s.code}?shop=${shop.code}`)}
+                onClick={disabled ? undefined : () => navigate(`/order/${s.code}?shop=${shop.code}`)}
               >
                 {/* LEFT SIDE: Section icon + naam + industry type */}
                 <div className="flex items-center gap-3">
@@ -225,6 +225,6 @@ export default function ShopLandingPage(): Element {
 // --- HELPER COMPONENT ---
 // Centered: Ek simple component jo text ko screen ke beech mein dikhata hai
 // Use case: Error message ya koi aur plain text centered dikhana ho tab
-function Centered({ text }: { text: string }): Element {
+function Centered({ text }: { text: string }) {
   return <div className="max-w-md mx-auto px-4 py-20 text-center text-gray-500">{text}</div>;
 }

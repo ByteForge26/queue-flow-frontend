@@ -7,7 +7,8 @@
 // ⚠️ NOTE: Imports (lines 49-57) bhi collapsed the ("import ...").
 // Neeche diye gaye imports sirf CODE USAGE se INFER kiye gaye hain —
 // apne actual project ke sahi import paths se inhe replace/verify karo.
-import { useState, useEffect, ChangeEvent, KeyboardEvent } from "react";
+import { useState, useEffect } from "react";
+import type { ChangeEvent, KeyboardEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useT } from "../i18n/LanguageContext"; // ya jo bhi aapka actual path ho
 import { Card, Button, StatusBadge } from "../components/ui";
@@ -21,7 +22,7 @@ import type {
   TicketItemDto,
 } from "../lib/types"; // adjust path
 
-export default function MyOrdersPage(): Element {
+export default function MyOrdersPage() {
   // URL se shopCode nikaalte hain – e.g. /q/SHOP123/my-orders → "SHOP123"
   // Default empty string hai taaki TypeScript error na aaye jab param missing ho
   const { shopCode = "" } = useParams();
@@ -110,7 +111,7 @@ export default function MyOrdersPage(): Element {
         ) : (
           // Scrollable list of local orders – max height fix hai taaki page overflow na ho
           <div className="space-y-2 mb-6 overflow-y-auto pr-1 max-h-[40vh]">
-            {localOrders.map((o: LocalOrder): Element => (
+            {localOrders.map((o: LocalOrder) => (
               // Har order card ek link hai – click karne par live tracking page pe jaata hai
               <Link key={o.ticketId} to={`/track/${o.ticketId}`}>
                 <Card className="flex items-center justify-between py-3 cursor-pointer hover:shadow-md transition-shadow">
@@ -190,7 +191,7 @@ export default function MyOrdersPage(): Element {
                 {/* NOTE: yahan loop variable ka naam 't' hai jo upar wale useT() 't' ko
                     shadow kar raha hai – ye naam clash hai, lekin sirf is scope mein;
                     loop ke andar t() translation function kaam nahi karega */}
-                {history.orders.map((t: TicketDto): Element => (
+                {history.orders.map((t: TicketDto) => (
                   // Har order card link hai – click karo to live tracking page
                   <Link key={t.id} to={`/track/${t.id}`}>
                     <Card className="flex items-center justify-between py-3 cursor-pointer hover:shadow-md transition-shadow">
@@ -235,7 +236,7 @@ export default function MyOrdersPage(): Element {
 // Props:
 //   label – descriptive text (e.g. "Today", "This Month")
 //   value – number jo dikhana hai (e.g. 3, 12)
-function Stat({ label, value }: { label: string; value: number }): Element {
+function Stat({ label, value }: { label: string; value: number }) {
   return (
     <Card className="text-center py-3">
       {/* Bada colored number – brand color mein highlight kiya */}

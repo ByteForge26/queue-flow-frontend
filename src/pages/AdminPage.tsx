@@ -1166,7 +1166,7 @@ export default function AdminPage() {
                             <OrderExtras ticket={ord} />
                           </div>
                           <div className="text-right">
-                            {ord.totalAmount > 0 && <div className="text-sm font-semibold text-gray-700">₹{ord.totalAmount}</div>}
+                            {(ord.totalAmount ?? 0) > 0 && <div className="text-sm font-semibold text-gray-700">₹{ord.totalAmount}</div>}
                             {ord.placedDate && <div className="text-xs text-gray-500">{ord.placedDate}</div>}
                             <div className="text-xs text-gray-400">{ord.placedTime}</div>
                           </div>

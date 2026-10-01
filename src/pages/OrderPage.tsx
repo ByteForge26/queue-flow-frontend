@@ -10,6 +10,7 @@
 // =====================================================================
 
 import { useEffect, useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import { useNavigate, useParams, useSearchParams, type NavigateFunction } from "react-router-dom";
 import CustomerHeader from "../components/CustomerHeader";
 import ShopContact from "../components/ShopContact";
@@ -25,7 +26,7 @@ import type { FormConfigDto, FieldDto, CatalogItemDto, TicketDto } from "../lib/
 // Ye Set isliye hai taaki O(1) me check ho sake koi field key standard hai ya nahi.
 const STANDARD_FIELD_KEYS = new Set(["name", "phone", "table", "reason", "list", "requirement"]);
 
-export default function OrderPage(): Element {
+export default function OrderPage() {
   // URL se sectionCode nikalo — e.g. /order/cafe-main => sectionCode = "cafe-main"
   const { sectionCode = "" } = useParams();
 
@@ -270,7 +271,7 @@ export default function OrderPage(): Element {
           <h2 className="font-semibold mb-3">{t("order.yourDetails")}</h2>
           <div className="space-y-3">
             {/* Config me defined har field ke liye ek input render karo */}
-            {config.fields.map((f: FieldDto): Element => (
+            {config.fields.map((f: FieldDto) => (
               <div key={f.key}>
                 <label className="block text-sm text-gray-600 mb-1">
                   {/* Standard field hai to translate karo, custom field ka label as-is dikhao */}
@@ -339,7 +340,7 @@ export default function OrderPage(): Element {
         {config.items.length > 0 && (
           <Card className="mb-4 border-t-4 border-t-orange-400">
             <h2 className="font-semibold mb-3">{t("order.chooseItems")}</h2>
-            {((): Element[] => {
+            {(() => {
               // Items ko unki category ke hisab se group karo
               // groups object: { "Coffee": [...items], "Snacks": [...items], "": [...uncategorized] }
               const groups: Record<string, typeof config.items> = {};
@@ -349,13 +350,13 @@ export default function OrderPage(): Element {
               });
 
               // Har category ke liye ek section render karo
-              return Object.entries(groups).map(([cat, groupItems]: [string, CatalogItemDto[]]): Element => (
+              return Object.entries(groups).map(([cat, groupItems]: [string, CatalogItemDto[]]) => (
                 <div key={cat} className="mb-3 last:mb-0">
                   {/* Category naam dikhao — empty category ka label nahi dikhein */}
                   {cat && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{cat}</p>}
                   <div className="space-y-2">
                     {/* Har item ke liye ItemRow component — naam, price, qty controls */}
-                    {groupItems.map((item: CatalogItemDto): Element => (
+                    {groupItems.map((item: CatalogItemDto) => (
                       <ItemRow key={item.id} item={item} qty={qty[item.id] ?? 0}
                         onChange={(q: number): void => setQty((prev: Record<number, number>): Record<number, number> =>
                           ({ ...prev, [item.id]: q }))} />
@@ -422,7 +423,7 @@ export default function OrderPage(): Element {
                 onChange={(e: ChangeEvent<HTMLSelectElement>): void => setDay(e.target.value)}
                 className="border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/40"
               >
-                {dayOptions.map((d: DayOption): Element => (
+                {dayOptions.map((d: DayOption) => (
                   // disabled days — shop us din band hai
                   <option key={d.value} value={d.value} disabled={d.disabled}>
                     {d.label}
@@ -502,7 +503,7 @@ function ItemRow({
   item: CatalogItemDto;
   qty: number;
   onChange: (q: number) => void;
-}): Element {
+}) {
   return (
     <div className="flex items-center justify-between border border-gray-100 rounded-xl px-3 py-2">
       {/* Item ki left side info — naam, price, avg time, description */}
@@ -549,7 +550,7 @@ function ItemRow({
 // Props:
 //   - text: string — dikhane wala message
 // =====================================================================
-function CenteredMessage({ text }: { text: string }): Element {
+function CenteredMessage({ text }: { text: string }) {
   return (
     <div className="max-w-md mx-auto px-4 py-20 text-center text-gray-500">{text}</div>
   );

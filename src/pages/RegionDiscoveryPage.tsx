@@ -14,6 +14,7 @@
 // =====================================================================
 
 import { useEffect, useState } from "react";
+import type { ChangeEvent, KeyboardEvent } from "react";
 import CountryTypeahead from "../components/CountryTypeahead";
 import CityTypeahead from "../components/CityTypeahead";
 import CustomerHeader from "../components/CustomerHeader";
@@ -24,7 +25,7 @@ import { getCities, searchShops } from "../lib/api";
 import type { CityDto, ShopSummaryDto } from "../lib/types";
 import { useNavigate, type NavigateFunction } from "react-router-dom";
 
-export default function RegionDiscoveryPage(): Element {
+export default function RegionDiscoveryPage() {
   // navigate() — programmatically ek route se doosre route pe jaane ke liye
   const navigate: NavigateFunction = useNavigate();
 
@@ -211,7 +212,7 @@ export default function RegionDiscoveryPage(): Element {
             <input
               value={pincode}
               onChange={(e: ChangeEvent<HTMLInputElement>): void => { setPincode(e.target.value); setPincodeError(false); }}
-              onKeyDown={(e: KeyboardEvent<HTMLInputElement>): false | void => e.key === "Enter" && runSearch()}
+              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") runSearch(); }}
               placeholder="e.g. 400001"
               className={`w-full border rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/40 ${
                 pincodeError ? "border-red-400" : "border-gray-200"
@@ -232,7 +233,7 @@ export default function RegionDiscoveryPage(): Element {
             <input
               value={shopCode}
               onChange={(e: ChangeEvent<HTMLInputElement>): void => setShopCode(e.target.value)}
-              onKeyDown={(e: KeyboardEvent<HTMLInputElement>): false | void => e.key === "Enter" && runSearch()}
+              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") runSearch(); }}
               placeholder={t("discovery.shopCodePlaceholder")}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/40 text-sm"
             />
@@ -259,14 +260,14 @@ export default function RegionDiscoveryPage(): Element {
           /* Shops list: max height set hai taaki page overflow na ho — inner scroll hoga
              pr-1 se scrollbar ke neeche content clip na ho */
           <div className="space-y-3 overflow-y-auto pr-1 max-h-[calc(100vh-420px)]">
-            {shops.map((s: ShopSummaryDto): Element => (
+            {shops.map((s: ShopSummaryDto) => (
               /* Shop Card: Har shop ek clickable card hai
                  - key: s.code unique identifier hai React rendering ke liye
                  - onClick: shop ke queue page pe navigate karo — /q/:shopCode */
               <Card
                 key={s.code}
                 className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={(): void => navigate(`/q/${s.code}`)}
+                onClick={() => navigate(`/q/${s.code}`)}
               >
                 {/* Card top row: Shop naam left mein, status badge + "Open" link right mein */}
                 <div className="flex items-center justify-between">

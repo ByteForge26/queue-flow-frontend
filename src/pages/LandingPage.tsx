@@ -4,7 +4,7 @@ import { Card } from "../components/ui";
 import LanguageToggle from "../components/LanguageToggle";
 import { useT } from "../i18n/LanguageContext";
 
-export default function LandingPage(): JSX.Element {
+export default function LandingPage() {
   // useT() ek custom hook hai jo current language ke hisaab se
   // translated strings return karta hai.
   // t("key") call karne par selected language mein text milta hai

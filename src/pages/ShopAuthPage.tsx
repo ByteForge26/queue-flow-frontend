@@ -4,7 +4,9 @@
 //  above this point were not visible and are not reconstructed here.)
 // =====================================================================
 import { useState } from "react";
+import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import type { NavigateFunction } from "react-router-dom";
 import { login, ownerSignup } from "../lib/api";
 import { saveAuth } from "../lib/auth";
 import type { AuthDto } from "../lib/types";
@@ -12,6 +14,7 @@ import { Button, Card } from "../components/ui";
 import { useT } from "../i18n/LanguageContext";
 import LanguageToggle from "../components/LanguageToggle";
 import { useGeolocation } from "../hooks/useGeolocation";
+import type { GeoLocation } from "../hooks/useGeolocation";
 import CountryTypeahead from "../components/CountryTypeahead";
 import { validatePhone } from "../lib/countries";
 
@@ -25,7 +28,7 @@ type Mode = "signin" | "signup";
 // Owner signup ke waqt inme se ek ya zyada select karna hota hai.
 const SECTION_TYPES: string[] = ["SALON", "FOOD", "CLINIC", "GROCERY", "ROOMS", "GENERAL"];
 
-export default function ShopAuthPage(): Element {
+export default function ShopAuthPage() {
   // navigate hook — login success ke baad user ko sahi route pe bhejna hai
   const navigate: NavigateFunction = useNavigate();
 
@@ -286,7 +289,7 @@ export default function ShopAuthPage(): Element {
       {/* hote hain taaki stale messages na dikhe. */}
       {/* ------------------------------------------------------------- */}
       <div className="flex rounded-xl bg-gray-100 p-1 mb-4">
-        {(["owner", "staff"] as Tab[]).map((tb: Tab): Element => (
+        {(["owner", "staff"] as Tab[]).map((tb: Tab) => (
           <button
             key={tb}
             onClick={(): void => { setTab(tb); setError(null); setFieldErrors({}); }}
@@ -306,7 +309,7 @@ export default function ShopAuthPage(): Element {
       {/* ------------------------------------------------------------- */}
       {tab === "owner" && (
         <div className="flex gap-4 justify-center mb-4 text-sm">
-          {(["signin", "signup"] as Mode[]).map((m: Mode): Element => (
+          {(["signin", "signup"] as Mode[]).map((m: Mode) => (
             <button
               key={m}
               onClick={(): void => { setMode(m); setError(null); setFieldErrors({}); }}
@@ -436,7 +439,7 @@ export default function ShopAuthPage(): Element {
                   {t("auth.facilities")} *
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {SECTION_TYPES.map((st: string): Element => (
+                  {SECTION_TYPES.map((st: string) => (
                     <CheckChip
                       key={st}
                       label={st}
@@ -557,7 +560,7 @@ export default function ShopAuthPage(): Element {
                   t("auth.forgotPwDetail3"),
                   t("auth.forgotPwDetail4"),
                   t("auth.forgotPwDetail5"),
-                ].map((item: string, i: number): Element => (
+                ].map((item: string, i: number) => (
                   <div key={i} className="flex items-center gap-3">
                     {/* Numbered circle badge */}
                     <span className="w-5 h-5 bg-brand/10 text-brand rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0">
@@ -653,6 +656,7 @@ export default function ShopAuthPage(): Element {
 // COUNTRIES list ko naam => object map mein convert karta hai taaki O(1) lookup ho sake.
 // phoneHint() function is map ko use karta hai country ke dial code aur digit range ke liye.
 import { COUNTRIES } from "../lib/countries";
+import type { CountryInfo } from "../lib/countries";
 const COUNTRIES_MAP: { [k: string]: CountryInfo } =
   Object.fromEntries(COUNTRIES.map((c: CountryInfo): [string, CountryInfo] => [c.name, c]));
 
@@ -679,7 +683,7 @@ function Field({
   onChange: (v: string) => void;
   type?: string;
   error?: string;
-}): Element {
+}) {
   return (
     <div>
       {/* Field label */}
@@ -717,7 +721,7 @@ function CheckChip({
   label: string;
   checked: boolean;
   onClick: () => void;
-}): Element {
+}) {
   return (
     <button
       type="button"

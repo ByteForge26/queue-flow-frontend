@@ -377,7 +377,7 @@ export default function StaffPage(): Element {
             {sections.length > 1 && (
               <select
                 value={sectionCode}
-                onChange={(e: ChangeEvent<HTMLSelectElement>): void => navigate(`/staff/${e.target.value}`)}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => navigate(`/staff/${e.target.value}`)}
                 className="border border-teal-400 bg-teal-700/50 text-white rounded-xl px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/40"
               >
                 {sections.map((s: SectionDto): Element => (
@@ -389,7 +389,7 @@ export default function StaffPage(): Element {
             )}
             {/* Admin dashboard button — sirf Admin role ke liye dikhta hai */}
             {isAdmin && (
-              <Button variant="ghost" onClick={(): void => navigate(`/admin/${auth!.shopCode}`)}>
+              <Button variant="ghost" onClick={() => navigate(`/admin/${auth!.shopCode}`)}>
                 {t("common.dashboard")}
               </Button>
             )}
@@ -503,9 +503,9 @@ export default function StaffPage(): Element {
                       {t("staff.position", { pos: ord.queuePosition, eta: ord.etaMinutes })}
                     </div>
                     {/* Collect amount — sirf tab dikhao jab totalAmount > 0 ho */}
-                    {ord.totalAmount > 0 && (
+                    {(ord.totalAmount ?? 0) > 0 && (
                       <div className="text-sm font-semibold text-emerald-700 mt-0.5">
-                        {t("staff.collect", { amt: ord.totalAmount })}
+                        {t("staff.collect", { amt: ord.totalAmount ?? 0 })}
                       </div>
                     )}
                     {/* Extra custom fields, comment, payment info, cancel reason */}
@@ -566,7 +566,7 @@ export default function StaffPage(): Element {
                   {ord.items.map((i: TicketItemDto): string => `${i.itemName} x${i.quantity}`).join(", ") || "—"}
                 </div>
                 {/* Total amount — rupee sign hard-coded (future orders currency fixed hai) */}
-                {ord.totalAmount > 0 && (
+                {(ord.totalAmount ?? 0) > 0 && (
                   <div className="text-sm font-semibold text-emerald-700 mt-0.5">₹{ord.totalAmount}</div>
                 )}
                 {/* Extra fields, comments, payment info */}
@@ -657,8 +657,8 @@ export default function StaffPage(): Element {
             </p>
             {/* Items list aur total amount reminder */}
             <div className="text-xs text-gray-400 mb-3">
-              {paymentTicket.items.map((i: TicketItemDto): string => `${i.itemName} x${i.quantity}`).join(", ") || "—"}
-              {paymentTicket.totalAmount > 0 && ` · ₹${paymentTicket.totalAmount}`}
+              {paymentTicket.items.map((i: TicketItemDto) => `${i.itemName} x${i.quantity}`).join(", ") || "—"}
+              {(paymentTicket.totalAmount ?? 0) > 0 && ` · ₹${paymentTicket.totalAmount}`}
             </div>
 
             {/* Received branch — payment mil gayi */}
@@ -787,7 +787,7 @@ function HistoryList({
               {/* Right side — amount aur order placement time */}
               <div className="text-right">
                 {/* Total amount — sirf tab dikhao jab > 0 ho */}
-                {ord.totalAmount > 0 && <div className="text-sm font-semibold text-gray-700">₹{ord.totalAmount}</div>}
+                {(ord.totalAmount ?? 0) > 0 && <div className="text-sm font-semibold text-gray-700">₹{ord.totalAmount}</div>}
                 {/* Order date (e.g. "12 Jun") */}
                 {ord.placedDate && <div className="text-xs text-gray-500">{ord.placedDate}</div>}
                 {/* Order time (e.g. "14:30") */}

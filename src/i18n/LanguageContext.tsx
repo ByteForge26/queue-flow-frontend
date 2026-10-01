@@ -34,7 +34,7 @@ interface LanguageCtx {
 // TypeScript ko pata chale ki Provider ke bahar use karna galat hai (useLang
 // mein iska check hai).
 // -----------------------------------------------------------------
-const Ctx: React.Context<LanguageCtx | null> = createContext<LanguageCtx | null>(null);
+const Ctx = createContext<LanguageCtx | null>(null);
 
 // -----------------------------------------------------------------
 // initialLang(): Ye function sirf ek baar chalta hai – app ke pehle render par.
@@ -58,7 +58,7 @@ function initialLang(): Lang {
 //   - children: ReactNode – koi bhi React element(s) jo is Provider ke andar
 //               render honge (usually ye poori app hoti hai)
 // -----------------------------------------------------------------
-export function LanguageProvider({ children }: { children: ReactNode }): Element {
+export function LanguageProvider({ children }: { children: ReactNode }) {
 
   // -----------------------------------------------------------------
   // useState: `lang` state – current language store karta hai.

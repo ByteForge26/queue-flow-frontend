@@ -109,7 +109,7 @@ import SuperAdminPage from "./pages/SuperAdminPage";
 // Ye function poori app ka routing structure return karta hai.
 // Isko main.tsx mein render kiya jaata hai.
 // Iska koi apna state ya props nahi hain – sirf routes define karta hai.
-export default function App(): Element {
+export default function App() {
   return (
     // <Routes> ek special wrapper hai jo browser ki current URL check karta hai
     // aur usse match karne wala pehla <Route> render karta hai.
