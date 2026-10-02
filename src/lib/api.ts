@@ -279,8 +279,12 @@ export async function superAdminSetPlan(
 }
 
 // Diye gaye country ke cities ki list fetch karo (customer signup dropdown ke liye)
-export async function getCities(country: string): Promise<CityDto[]> {
-  const { data } = await api.get("/public/cities", { params: { country } });
+export async function getCities(country: string, signal?: AbortSignal): Promise<CityDto[]> {
+  const { data } = await api.get("/public/cities", {
+    params: { country },
+    signal,
+    timeout: 12000,
+  });
   return data;
 }
 

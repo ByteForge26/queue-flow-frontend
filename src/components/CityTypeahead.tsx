@@ -25,9 +25,10 @@ interface Props {
   // Agar pass na karo to label nahi dikhega.
   label?: string;
 
-  // loading: (optional) Agar cities abhi server se aa rahi hain to true
-  // pass karo — tab input ki jagah spinning loader dikhega.
+  // loading: (optional) Suggestions fetch hote waqt inline loader dikhata hai.
   loading?: boolean;
+  loadingText?: string;
+  loadErrorText?: string;
 
   // disabled: (optional) Agar form submit ho raha ho ya field read-only
   // karni ho to true pass karo — input gray aur non-interactive ho jaata hai.
@@ -40,6 +41,8 @@ export default function CityTypeahead({
   onChange,
   label,
   loading,
+  loadingText,
+  loadErrorText,
   disabled,
 }: Props) {
   // query: Input box mein jo text dikhta hai woh yahan store hota hai.
@@ -139,15 +142,8 @@ export default function CityTypeahead({
       {/* label prop agar diya gaya ho to input ke upar text dikhao */}
       {label && <label className="block text-sm text-gray-600 mb-1">{label}</label>}
 
-      {/* loading true hai to input ki jagah spinner dikhao */}
-      {loading ? (
-        // Spinner container — same size jaise input hota hai taaki layout shift na ho
-        <div className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-gray-400 text-sm flex items-center gap-2">
-          {/* Rotating spinner — CSS animation se ghumta hai */}
-          <div className="h-4 w-4 border-2 border-brand border-t-transparent rounded-full animate-spin flex-shrink-0" />
-        </div>
-      ) : (
-        // Actual city input field
+      {/* Suggestions load hote waqt input active rehta hai, loader side mein dikhata hai. */}
+      <div className="relative">
         <input
           type="text"
           value={query} // Controlled input — value state se aata hai
@@ -156,10 +152,25 @@ export default function CityTypeahead({
           placeholder={cities.length > 0 ? "Type or pick a city…" : "Enter city"}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange(e.target.value)} // Typing par handleChange call
           onFocus={() => setOpen(true)} // Click/tab se focus aane par dropdown kholo
-          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/40"
+          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-brand/40"
           autoComplete="off" // Browser ka built-in autocomplete band karo — hamare
           // paas khud ka dropdown hai, dono ek saath nahi chahiye
         />
+        {loading && (
+          <span
+            role="status"
+            aria-label={loadingText ?? "Loading city suggestions"}
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+          >
+            <span className="block h-4 w-4 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+          </span>
+        )}
+      </div>
+      {loading && loadingText && (
+        <p className="mt-1 text-xs text-gray-400" role="status">{loadingText}</p>
+      )}
+      {!loading && loadErrorText && (
+        <p className="mt-1 text-xs text-amber-700" role="status">{loadErrorText}</p>
       )}
 
       {/* Dropdown suggestion list — sirf tab dikho jab open=true aur suggestions hain */}

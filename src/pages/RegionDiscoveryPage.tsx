@@ -78,6 +78,9 @@ export default function RegionDiscoveryPage() {
   // loadingCities: true jab getCities API call chal rahi ho — CityTypeahead mein loading state dikhane ke liye
   const [loadingCities, setLoadingCities] = useState<boolean>(false);
 
+  // Suggestions fail ho to customer ko manual entry ka option clearly batata hai.
+  const [citiesLoadError, setCitiesLoadError] = useState<boolean>(false);
+
   // autoFilled: ek baar geolocation se country/city auto-fill ho jaaye to dobara set na ho isliye flag
   // Ye prevent karta hai ki geo values repeat mein apply na ho jab component re-render ho
   const [autoFilled, setAutoFilled] = useState<boolean>(false);
@@ -97,16 +100,46 @@ export default function RegionDiscoveryPage() {
   // Ye effect tab chalega jab bhi `country` state ki value change ho.
   // Agar country empty ho to cities list saaf kar do aur return karo.
   // Warna getCities(country) API call karo aur result cities state mein store karo.
-  // Error aane par cities ko empty array set karo taaki UI broken na rahe.
-  // loadingCities flag se CityTypeahead ko pata chalega ki data load ho raha hai.
-  useEffect((): void => {
-      if (!country.trim()) { setCities([]); return; }
+  // Country input typing ko debounce karo aur purani request cancel karo,
+  // taaki har keystroke par request na jaaye aur stale country results na dikhein.
+  useEffect((): (() => void) | void => {
+    const requestedCountry = country.trim();
+    if (!requestedCountry) {
+      setCities([]);
+      setLoadingCities(false);
+      setCitiesLoadError(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setCities([]);
+    setLoadingCities(false);
+    setCitiesLoadError(false);
+
+    const debounceTimer = window.setTimeout((): void => {
       setLoadingCities(true);
-      getCities(country.trim())
-        .then((data: unknown): void => setCities(Array.isArray(data) ? data as CityDto[] : []))
-        .catch((): void => setCities([]))
-        .finally((): void => setLoadingCities(false));
-    }, [country]);
+      getCities(requestedCountry, controller.signal)
+        .then((data: unknown): void => {
+          if (!controller.signal.aborted) {
+            setCities(Array.isArray(data) ? data as CityDto[] : []);
+          }
+        })
+        .catch((): void => {
+          if (!controller.signal.aborted) {
+            setCities([]);
+            setCitiesLoadError(true);
+          }
+        })
+        .finally((): void => {
+          if (!controller.signal.aborted) setLoadingCities(false);
+        });
+    }, 350);
+
+    return (): void => {
+      window.clearTimeout(debounceTimer);
+      controller.abort();
+    };
+  }, [country]);
 
   // --- HANDLER: Country change hone par ---
   // CountryTypeahead se nayi value aane par:
@@ -196,6 +229,8 @@ export default function RegionDiscoveryPage() {
               onChange={(v: string): void => { setCity(v); setCityError(false); }}
               label={t("discovery.city")}
               loading={loadingCities}
+              loadingText={t("discovery.loadingCities")}
+              loadErrorText={citiesLoadError ? t("discovery.citiesLoadFailed") : undefined}
             />
             {/* City validation error: City empty hone par red text mein error dikhao */}
             {cityError && <p className="text-xs text-red-500 mt-1">{t("discovery.cityRequired")}</p>}
