@@ -72,7 +72,7 @@ export function getLocalOrders(shopCode?: string): LocalOrder[] {
     // agar shopCode diya hai toh sirf us shop ke orders return karo
     // nahi diya toh poori list return karo
     return shopCode
-      ? all.filter((o: LocalOrder): boolean => o.shopCode === shopCode)
+      ? all.filter((o) => o.shopCode?.toLowerCase() === shopCode.toLowerCase())
       : all;
   } catch {
     // corrupt data - empty array do taaki UI crash na kare

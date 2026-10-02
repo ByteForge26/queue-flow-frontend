@@ -13,7 +13,8 @@ import { Link, useParams } from "react-router-dom";
 import { useT } from "../i18n/LanguageContext"; // ya jo bhi aapka actual path ho
 import { Card, Button, StatusBadge } from "../components/ui";
 import CustomerHeader from "../components/CustomerHeader";
-import { getShop, getLocalOrders, getCustomerHistory } from "../lib/api"; // adjust path
+import { getLocalOrders } from "../lib/auth";
+import { getShop, getCustomerHistory } from "../lib/api";
 import type {
   ShopDto,
   LocalOrder,
@@ -60,7 +61,9 @@ export default function MyOrdersPage() {
   // shopCode dependency mein hai kyunki agar URL change ho to fresh data chahiye
   useEffect((): void => {
     getShop(shopCode).then(setShop).catch((): undefined => undefined);
-    setLocalOrders(getLocalOrders(shopCode));
+    const orders = getLocalOrders(shopCode);
+    console.log("shopCode:", JSON.stringify(shopCode), "orders:", orders);
+    setLocalOrders(orders);
   }, [shopCode]);
 
   // lookup() – phone + naam se customer ki order history server se fetch karta hai
