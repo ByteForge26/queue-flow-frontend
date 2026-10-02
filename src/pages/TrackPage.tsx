@@ -375,7 +375,7 @@ export default function TrackPage(): Element {
             <>
               {/* COMPLETED status */}
               <p className="text-emerald-600 font-medium">
-                {t("track.completed")}
+                {t("track.done")}
               </p>
             </>
 
