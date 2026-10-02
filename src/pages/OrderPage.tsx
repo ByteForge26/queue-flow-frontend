@@ -338,33 +338,35 @@ export default function OrderPage() {
         {/* Orange top border se ye section visually alag hai */}
         {/* ------------------------------------------------------------------ */}
         {config.items.length > 0 && (
-          <Card className="mb-4 border-t-4 border-t-orange-400">
-            <h2 className="font-semibold mb-3">{t("order.chooseItems")}</h2>
-            {(() => {
-              // Items ko unki category ke hisab se group karo
-              // groups object: { "Coffee": [...items], "Snacks": [...items], "": [...uncategorized] }
-              const groups: Record<string, typeof config.items> = {};
-              config.items.forEach((item: CatalogItemDto): void => {
-                const key: string = item.category ?? ""; // Category nahi hai to empty string key
-                (groups[key] = groups[key] ?? []).push(item);
-              });
+          <Card className="mb-4 border-t-4 border-t-orange-400 bg-gradient-to-b from-orange-50/60 to-white">
+            <h2 className="font-semibold text-gray-800 mb-3">{t("order.chooseItems")}</h2>
+            <div className="max-h-[38vh] sm:max-h-[42vh] overflow-y-auto overscroll-contain pr-1.5 custom-scroll">
+              {(() => {
+                // Items ko unki category ke hisab se group karo
+                // groups object: { "Coffee": [...items], "Snacks": [...items], "": [...uncategorized] }
+                const groups: Record<string, typeof config.items> = {};
+                config.items.forEach((item: CatalogItemDto): void => {
+                  const key: string = item.category ?? ""; // Category nahi hai to empty string key
+                  (groups[key] = groups[key] ?? []).push(item);
+                });
 
-              // Har category ke liye ek section render karo
-              return Object.entries(groups).map(([cat, groupItems]: [string, CatalogItemDto[]]) => (
-                <div key={cat} className="mb-3 last:mb-0">
-                  {/* Category naam dikhao — empty category ka label nahi dikhein */}
-                  {cat && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{cat}</p>}
-                  <div className="space-y-2">
-                    {/* Har item ke liye ItemRow component — naam, price, qty controls */}
-                    {groupItems.map((item: CatalogItemDto) => (
-                      <ItemRow key={item.id} item={item} qty={qty[item.id] ?? 0}
-                        onChange={(q: number): void => setQty((prev: Record<number, number>): Record<number, number> =>
-                          ({ ...prev, [item.id]: q }))} />
-                    ))}
+                // Har category ke liye ek section render karo
+                return Object.entries(groups).map(([cat, groupItems]: [string, CatalogItemDto[]]) => (
+                  <div key={cat} className="mb-3 last:mb-0">
+                    {/* Category naam dikhao — empty category ka label nahi dikhein */}
+                    {cat && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{cat}</p>}
+                    <div className="space-y-2">
+                      {/* Har item ke liye ItemRow component — naam, price, qty controls */}
+                      {groupItems.map((item: CatalogItemDto) => (
+                        <ItemRow key={item.id} item={item} qty={qty[item.id] ?? 0}
+                          onChange={(q: number): void => setQty((prev: Record<number, number>): Record<number, number> =>
+                            ({ ...prev, [item.id]: q }))} />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ));
-            })()}
+                ));
+              })()}
+            </div>
           </Card>
         )}
 
@@ -505,34 +507,34 @@ function ItemRow({
   onChange: (q: number) => void;
 }) {
   return (
-    <div className="flex items-center justify-between border border-gray-100 rounded-xl px-3 py-2">
+    <div className="flex items-center justify-between border border-gray-200 bg-white rounded-2xl px-3 py-3 shadow-sm transition hover:border-brand/40 hover:shadow-md">
       {/* Item ki left side info — naam, price, avg time, description */}
-      <div>
-        <div className="font-medium">{item.name}</div>
+      <div className="min-w-0 pr-3">
+        <div className="font-semibold text-gray-800 leading-tight">{item.name}</div>
         {/* Price aur estimated time — price 0 ho to dash dikhao */}
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-gray-500 mt-1">
           {item.price > 0 ? `₹${item.price}` : "-"} · ~{item.avgMinutes} min
         </div>
         {/* Optional description — sirf tab dikhao jab ho */}
         {item.description && (
-          <div className="text-xs text-gray-500 mt-0.5">{item.description}</div>
+          <div className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</div>
         )}
       </div>
 
       {/* Quantity controls — Minus button, current count, Plus button */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 shrink-0">
         {/* Minus button — 0 se neeche nahi jaayega (Math.max se ensure) */}
         <button
-          className="h-8 w-8 rounded-full bg-gray-100 text-lg leading-none"
+          className="h-8 w-8 rounded-full bg-gray-100 text-lg leading-none text-gray-700 shadow-inner transition hover:bg-gray-200"
           onClick={(): void => onChange(Math.max(0, qty - 1))}
         >
           -
         </button>
         {/* Current quantity display */}
-        <span className="w-5 text-center">{qty}</span>
+        <span className="w-6 text-center text-sm font-semibold text-gray-700">{qty}</span>
         {/* Plus button — brand color me (usually orange/primary color) */}
         <button
-          className="h-8 w-8 rounded-full bg-brand text-white text-lg leading-none"
+          className="h-8 w-8 rounded-full bg-brand text-white text-lg leading-none shadow-sm transition hover:bg-brand-dark"
           onClick={(): void => onChange(qty + 1)}
         >
           +
