@@ -638,7 +638,7 @@ export default function SuperAdminPage(): Element {
             {/* Tier system toggle — array me isliye hai ki baad me aur toggles add karna aasan rahe */}
             {[
               { label: "Tier system (BASIC/PAID limits)", desc: "Enforce limits on BASIC shops", val: tierSystemEnabled, toggle: (): void => setTierConfirm(!tierSystemEnabled) },
-              { label: "Payment QR (UPI etc.)", desc: "PAID shops apna payment QR upload/dikha sakti hain - disable karna global ban jaisa hai.", val: paymentQrEnabled, toggle: (): void => togglePaymentQrEnabled },
+              { label: "Payment QR (UPI etc.)", desc: "PAID shops apna payment QR upload/dikha sakti hain - disable karna global ban jaisa hai.", val: paymentQrEnabled, toggle: togglePaymentQrEnabled }, // FIX: pehle '(): void => togglePaymentQrEnabled' tha, jo function ko call kiye bina return kar raha tha (type error)
             ].map((item: { label: string; desc: string; val: boolean; toggle: () => void }): Element => (
               // Toggle switch UI — green jab ON, gray jab OFF
               <div key={item.label} className="flex items-center justify-between">

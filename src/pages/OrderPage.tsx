@@ -19,7 +19,8 @@ import { useT } from "../i18n/LanguageContext";
 import { getFormConfig, createTicket } from "../lib/api";
 import { toIsoInstant, weekDayOptions, defaultTime, type DayOption } from "../lib/schedule";
 import { inOrderCooldown, deviceOrderLimitReached, markOrderPlaced, pushLocalOrder } from "../lib/auth";
-import type { FormConfigDto, FieldDto, CatalogItemDto, TicketDto } from "../lib/types";
+// FIX: ServiceSectionDto import add kiya — pehle missing tha isliye "Cannot find name" error aa raha tha
+import type { FormConfigDto, FieldDto, CatalogItemDto, ServiceSectionDto, TicketDto } from "../lib/types";
 
 // Standard template fields — inka label bhasha ke saath toggle hota hai.
 // Admin ke apne banaye custom fields ka label jaisa hai waisa rehta hai.
@@ -339,120 +340,133 @@ export default function OrderPage() {
           </div>
         </Card>
 
-        {/* ----------------------------------------------------------------- */}
-              {/* CATALOG ITEMS CARD — Sirf tab dikhao jab items hain               */}
-              {/* Agar admin ne service sections banaye hain (e.g. "Pizza", "Burgers") */}
-              {/* to unke scrollable tabs dikhte hain; warna purani category grouping */}
-              {/* Orange top border se ye section visually alag hai                 */}
-              {/* ----------------------------------------------------------------- */}
-              {config.items.length > 0 && (
-                <Card className="mb-4 border-t-4 border-t-orange-400">
-                  <h2 className="font-semibold mb-3">{t("order.chooseItems")}</h2>
+        {/* ------------------------------------------------------------------ */}
+        {/* CATALOG ITEMS CARD — Sirf tab dikhao jab items hain */}
+        {/* Agar admin ne service sections banaye hain (e.g. "Pizza", "Burgers") */}
+        {/* to unke scrollable tabs dikhte hain; warna purani category grouping */}
+        {/* Orange top border se ye section visually alag hai */}
+        {/* ------------------------------------------------------------------ */}
+        {config.items.length > 0 && (
+          <Card className="mb-4 border-t-4 border-t-orange-400">
+            <h2 className="font-semibold mb-3">{t("order.chooseItems")}</h2>
 
-                  {/* --- Section Tabs (sirf tab dikhao jab admin ne sections banaye hain) --- */}
-                  {config.sections.length > 0 && (
-                    <>
-                      {/* Search — jab bahut saare sections hon to naam se dhundo */}
-                      {config.sections.length > 6 && (
-                        <input
-                          type="text"
-                          placeholder="🔍 Search sections..."
-                          value={sectionSearch}
-                          onChange={(e: ChangeEvent<HTMLInputElement>): void => setSectionSearch(e.target.value)}
-                          className="w-full mb-2 border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
-                        />
-                      )}
+            {/* --- Section Tabs (sirf tab dikhao jab admin ne sections banaye hain) --- */}
+            {config.sections.length > 0 && (
+              <>
+                {/* Search — jab bahut saare sections hon to naam se dhundo */}
+                {config.sections.length > 6 && (
+                  <input
+                    type="text"
+                    placeholder="🔍 Search sections..."
+                    value={sectionSearch}
+                    onChange={(e: ChangeEvent<HTMLInputElement>): void => setSectionSearch(e.target.value)}
+                    className="w-full mb-2 border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+                  />
+                )}
 
-                      {/* Horizontally scrollable pills — jitne bhi sections hon, page neeche nahi badhta,
-                          isi row ke andar left-right scroll hota hai (mobile-friendly) */}
-                      <div className="flex gap-2 overflow-x-auto pb-2 mb-3 -mx-1 px-1 scrollbar-thin">
-                        <button
-                          onClick={(): void => setActiveSection(null)}
-                          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-all ${
-                            activeSection === null
-                              ? "bg-brand text-white border-brand"
-                              : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                          }`}
-                        >
-                          All
-                        </button>
-                        {config.sections
-                          .filter((s: ServiceSectionDto): boolean => s.name.toLowerCase().includes(sectionSearch.trim().toLowerCase()))
-                          .map((s: ServiceSectionDto): Element => (
-                            <button
-                              key={s.id}
-                              onClick={(): void => setActiveSection(s.id)}
-                              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-all ${
-                                activeSection === s.id
-                                  ? "bg-brand text-white border-brand"
-                                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-                              }`}
-                            >
-                              📝 {s.name}
-                            </button>
-                          ))}
+                {/* Horizontally scrollable pills — jitne bhi sections hon, page neeche nahi badhta,
+                    isi row ke andar left-right scroll hota hai (mobile-friendly) */}
+                <div className="flex gap-2 overflow-x-auto pb-2 mb-3 -mx-1 px-1 scrollbar-thin">
+                  {/* "All" pill — filter hatao, sab sections dikhao */}
+                  <button
+                    onClick={(): void => setActiveSection(null)}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-all ${
+                      activeSection === null
+                        ? "bg-brand text-white border-brand"
+                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    All
+                  </button>
+                  {/* Har section ke liye ek pill — search text se filter hoti hain.
+                      FIX: pehle yahan ': Element' return type tha (browser DOM type) jo galat tha,
+                      isliye hata diya; TypeScript khud JSX.Element infer kar leta hai. */}
+                  {config.sections
+                    .filter((s: ServiceSectionDto): boolean =>
+                      s.name.toLowerCase().includes(sectionSearch.trim().toLowerCase()))
+                    .map((s: ServiceSectionDto) => (
+                      <button
+                        key={s.id}
+                        onClick={(): void => setActiveSection(s.id)}
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-all ${
+                          activeSection === s.id
+                            ? "bg-brand text-white border-brand"
+                            : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                        }`}
+                      >
+                        📝 {s.name}
+                      </button>
+                    ))}
+                </div>
+              </>
+            )}
+
+            {/* --- Items List — fixed max height + scroll, taaki bahut items hone par
+                page khud lamba hone ke bajaye isi box ke andar scroll ho --- */}
+            <div className="max-h-[420px] overflow-y-auto pr-1 space-y-3">
+              {(() => {
+                // Helper: ek item ki quantity update karo (ItemRow ka onChange isi ko call karta hai)
+                const setItemQty = (id: number, q: number): void =>
+                  setQty((prev: Record<number, number>) => ({ ...prev, [id]: q }));
+
+                // Agar admin ne koi service section banaya hi nahi hai, to purani
+                // category-based grouping use karo — backward compatible rehta hai.
+                if (config.sections.length === 0) {
+                  const groups: Record<string, CatalogItemDto[]> = {};
+                  config.items.forEach((item: CatalogItemDto): void => {
+                    const key: string = item.category ?? "";
+                    (groups[key] = groups[key] ?? []).push(item);
+                  });
+                  return Object.entries(groups).map(([cat, groupItems]: [string, CatalogItemDto[]]) => (
+                    <div key={cat} className="mb-3 last:mb-0">
+                      {/* Category ka naam — khali ho to heading nahi dikhegi */}
+                      {cat && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{cat}</p>}
+                      <div className="space-y-2">
+                        {groupItems.map((item: CatalogItemDto) => (
+                          <ItemRow key={item.id} item={item} qty={qty[item.id] ?? 0}
+                            onChange={(q: number): void => setItemQty(item.id, q)} />
+                        ))}
                       </div>
-                    </>
-                  )}
+                    </div>
+                  ));
+                }
 
-                  {/* --- Items List — fixed max height + scroll, taaki bahut items hone par
-                      page khud lamba hone ke bajaye isi box ke andar scroll ho --- */}
-                  <div className="max-h-[420px] overflow-y-auto pr-1 space-y-3">
-                    {(() : Element | Element[] => {
+                // Sections ke hisaab se items dikhao. "All" selected ho to sab sections
+                // apne headings ke saath dikhte hain; ek section select karne par sirf wahi.
+                const itemsToShow: CatalogItemDto[] = activeSection === null
+                  ? config.items
+                  : config.items.filter((it: CatalogItemDto): boolean => it.serviceSectionId === activeSection);
 
-                      // Agar admin ne koi service section banaya hi nahi hai, to purani
-                      // category-based grouping use karo — backward compatible rehta hai.
-                      if (config.sections.length === 0) {
-                        const groups: Record<string, typeof config.items> = {};
-                        config.items.forEach((item: CatalogItemDto): void => {
-                          const key: string = item.category ?? "";
-                          (groups[key] = groups[key] ?? []).push(item);
-                        });
-                        return Object.entries(groups).map(([cat, groupItems]: [string, CatalogItemDto[]]): Element => (
-                          <div key={cat} className="mb-3 last:mb-0">
-                            {cat && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{cat}</p>}
-                            <div className="space-y-2">
-                              {groupItems.map((item: CatalogItemDto): Element => (
-                                <ItemRow key={item.id} item={item} qty={qty[item.id] ?? 0}
-                                  onChange={(q: number): void => setQty((prev: Record<number, number>): {[x: number]: number} => ({ ...prev, [item.id]: q }))} />
-                              ))}
-                            </div>
-                          </div>
-                        ));
-                      }
+                // Items ko unke section ke naam ke hisaab se group karo.
+                // Jis item ka section nahi mila (ya null hai) wo "Other" me jaata hai.
+                const bySection: Record<string, CatalogItemDto[]> = {};
+                itemsToShow.forEach((item: CatalogItemDto): void => {
+                  const sec: ServiceSectionDto | undefined =
+                    config.sections.find((s: ServiceSectionDto): boolean => s.id === item.serviceSectionId);
+                  const key: string = sec ? sec.name : "Other";
+                  (bySection[key] = bySection[key] ?? []).push(item);
+                });
 
-                      // Sections ke hisaab se items dikhao. "All" selected ho to sab sections
-                      // apne headings ke saath dikhte hain; ek section select karne par sirf wahi.
-                      const itemsToShow: CatalogItemDto[] = activeSection === null
-                        ? config.items
-                        : config.items.filter((it: CatalogItemDto): boolean => it.serviceSectionId === activeSection);
+                // Chuna hua section khali hai to message dikhao
+                if (Object.keys(bySection).length === 0) {
+                  return <p className="text-sm text-gray-400 text-center py-4">Is section mein koi item nahi hai</p>;
+                }
 
-                      const bySection: Record<string, typeof config.items> = {};
-                      itemsToShow.forEach((item: CatalogItemDto): void => {
-                        const sec: ServiceSectionDto | undefined = config.sections.find((s: ServiceSectionDto): boolean => s.id === item.serviceSectionId);
-                        const key: string = sec ? sec.name : "Other";
-                        (bySection[key] = bySection[key] ?? []).push(item);
-                      });
-
-                      if (Object.keys(bySection).length === 0) {
-                        return <p className="text-sm text-gray-400 text-center py-4">Is section mein koi item nahi hai</p>;
-                      }
-
-                      return Object.entries(bySection).map(([name, groupItems]: [string, CatalogItemDto[]]): Element => (
-                        <div key={name} className="mb-3 last:mb-0">
-                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{name}</p>
-                          <div className="space-y-2">
-                            {groupItems.map((item: CatalogItemDto): Element => (
-                              <ItemRow key={item.id} item={item} qty={qty[item.id] ?? 0}
-                                onChange={(q: number): void => setQty((prev: Record<number, number>): {[x: number]: number} => ({ ...prev, [item.id]: q }))} />
-                            ))}
-                          </div>
-                        </div>
-                      ));
-                    })()}
+                return Object.entries(bySection).map(([name, groupItems]: [string, CatalogItemDto[]]) => (
+                  <div key={name} className="mb-3 last:mb-0">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{name}</p>
+                    <div className="space-y-2">
+                      {groupItems.map((item: CatalogItemDto) => (
+                        <ItemRow key={item.id} item={item} qty={qty[item.id] ?? 0}
+                          onChange={(q: number): void => setItemQty(item.id, q)} />
+                      ))}
+                    </div>
                   </div>
-                </Card>
-              )}
+                ));
+              })()}
+            </div>
+          </Card>
+        )}
 
         {/* ------------------------------------------------------------------ */}
         {/* COMMENT BOX — Optional note/special instruction from customer */}
