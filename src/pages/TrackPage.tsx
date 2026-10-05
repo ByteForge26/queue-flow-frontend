@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { ReactElement as Element } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useT } from "../i18n/LanguageContext";
-import { getTicket, getFormConfig, cancelTicket } from "../lib/api";
+import { getTicket, getFormConfig, cancelTicket,getPublicPaymentQrUrl } from "../lib/api";
 import { getLocalOrders } from "../lib/auth";
 import { useStomp } from "../hooks/useStomp";
 import { Card, StatusBadge, Button, Spinner } from "../components/ui";
@@ -84,6 +84,11 @@ export default function TrackPage(): Element {
   // ShopContact component ko pass ki jaati hai
   const [shopAddress, setShopAddress] = useState<string | null>(null);
 
+  // hasPaymentQr - true tabhi hota hai jab admin ne apna payment QR upload kiya hai
+  // Aur shop PAID planpar ho AUR superAdmin ne feature ban na kiya ho ( backend se
+  // teeno conditions check hoti hain.) Isi flag se "Scan to Pay" card dikhata hai.hai
+  const[hasPaymentQr, setHasPaymentQr] = useState<boolean>(false);
+
   // notFound — agar ticket ID se nahi mila
   // (404 ya error) to "Not Found" message dikhate hain
   const [notFound, setNotFound] = useState(false);
@@ -130,6 +135,7 @@ export default function TrackPage(): Element {
           setShopCity(cfg.shopCity);
           setShopPhone(cfg.shopPhone);
           setShopAddress(cfg.shopAddress);
+          setHasPaymentQr(cfg.hasPaymentQr);
         }
       );
     }
@@ -271,6 +277,20 @@ export default function TrackPage(): Element {
             />
           </div>
         </div>
+
+        {/* ---- PAYMENT QR CARD ----
+            Admin ne apna payment QR (UPI etc.) upload kiya ho tabhi dikhta hai.
+            Cancelled order mein payment ka koi matlab nahi, isliye wahan hide hai. */}
+        {hasPaymentQr && ticket.status !== "CANCELLED" && (
+          <Card className="mb-4 text-center">
+            <p className="text-sm font-semibold mb-2">💳 {t("track.scanToPay")}</p>
+            <img
+              src={getPublicPaymentQrUrl(ticket.businessCode)}
+              alt="Payment QR"
+              className="mx-auto w-48 h-48 object-contain rounded-xl border border-gray-100"
+            />
+          </Card>
+        )}
 
         {/* ============================================================
             MAIN STATUS CARD

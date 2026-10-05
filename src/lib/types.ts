@@ -70,6 +70,7 @@ export interface CatalogItemDto {
   price: number; // Item ka price
   description: string | null; // Optional description - null agar koi description nahi
   category: string | null; // Optional category grouping (e.g., "Beverages", "Services")
+  serviceSectionId: number | null; // Agar multi-section hai toh kaunsa section ye item belong karta hai
 }
 
 // FormConfigDto: Ek shop ka poora booking form configuration - public API se milta hai.
@@ -85,10 +86,12 @@ export interface FormConfigDto {
   shopAddress: string | null; // Physical address
   fields: FieldDto[]; // Custom form fields jo customer ko fill karne hain
   items: CatalogItemDto[]; // Available services/products jo select kar sakte hain
+  sections: ServiceSectionDto[]; // Available service sections
   statusFlow: string[]; // Is shop ke liye valid ticket statuses ka order
   shopOpenTime: string; // Opening time (e.g., "09:00")
   shopCloseTime: string; // Closing time (e.g., "21:00")
   shopOperatingDays: string; // "1,2,3,4,5,6,7" - comma-separated day numbers (1=Mon, 7=Sun)
+  hasPaymentQr: boolean; // Agar shop ne payment QR code set kiya hai toh true and order place hone ke baad dikhao
 }
 
 // TicketItemDto: Ek ticket mein ek selected item ki details.
@@ -112,6 +115,7 @@ export interface MenuItemDto {
   active: boolean; // false = customers ko nahi dikhta, par history mein rahta hai
   description: string | null;
   category: string | null;
+  serviceSectionId?: number | null; // Agar multi-section hai toh kaunsa section ye item belong karta hai
 }
 
 // MenuItemCommand: Naya menu item create ya existing update karne ka request body.
@@ -122,6 +126,22 @@ export interface MenuItemCommand {
   price: number;
   description?: string | null; // Optional - nahi diya toh backend default use karega
   category?: string | null; // Optional - nahi diya toh uncategorized rahega
+  serviceSectionId?: number | null; // Agar multi-section hai toh kaunsa section ye item belong karta hai
+}
+
+// ServiceSectionDto: Menu items ko organize karne ke liye subsections (e.g., "Pizza", "Burgers").
+// Restaurant mein alag-alag service sections hote hain — har section mein multiple items.
+export interface ServiceSectionDto {
+  id: number;
+  businessId: number;    // Parent business (section)
+  name: string;           // Section name (e.g., "Pizza", "Burgers")
+  displayOrder: number;   // Display order for sorting
+  active: boolean;        // Agar false hai toh section hidden
+}
+
+// ServiceSectionCommand: Naya service section create ya update karne ka request body.
+export interface ServiceSectionCommand {
+  name: string;
 }
 
 // StaffStatsDto: Ek staff member ki performance stats.
@@ -294,6 +314,7 @@ export interface ShopDetailDto {
   operatingDays: string | null; // Active days
   forceServiceSelect: boolean; // true = customer ko koi ek service zaroor select karni hogi
   tierSystemEnabled: boolean; // true = priority/tier queue system active hai
+  hasPaymentQr: boolean; // true = shop ne payment QR code set kiya hai
 }
 
 // SuperAdminShopDto: Platform-level super admin ke liye shop ka summary.
@@ -350,6 +371,7 @@ export interface PlatformConfigDto {
   paidPrice: string; // Paid plan ka price (string mein - currency formatting ke liye)
   paidCurrency: string; // Currency code (e.g., "INR", "USD")
   bannedServiceTypes: string[]; // In service types ko naye shops nahi add kar sakte
+  paymentQrEnabled: boolean; // Super Admin ka global switch - agar false hai toh sab shops ke liye payment QR feature disable ho jaayega
 }
 
 // CityDto: Ek city ka representation - dropdown populate karne ke liye.

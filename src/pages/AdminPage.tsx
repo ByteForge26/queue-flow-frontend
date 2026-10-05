@@ -7,11 +7,14 @@ import {
   createStaff,
   deleteSection,
   deleteStaff,
+  deletePaymentQr,
   exportOrdersCsv,
+  exportOrdersExcel,
   getAdminHistory,
   getAdminOverview,
   getAdminQrBlob,
   getAdminQrUrl,
+  getPaymentQrBlob,
   getPlatformConfig,
   getShopDetails,
   getStaffAnalytics,
@@ -22,6 +25,7 @@ import {
   setShopOpen as apiSetShopOpen,
   setSectionActive,
   updateShopDetails,
+  uploadPaymentQr,
 } from "../lib/api";
 import type { AdminOverviewDto, HistoryDto, SectionStatsDto, ShopDetailDto, StaffStatsDto, StaffUserDto } from "../lib/types";
 import CountryTypeahead from "../components/CountryTypeahead";
@@ -68,6 +72,12 @@ export default function AdminPage() {
   // QR code modal
   const [qrModal, setQrModal] = useState<{ blobUrl: string; shopUrl: string } | null>(null);
 
+
+  // Payment QR (UPI etc,) - admin apna QR upload karta hai , preview blobUrl state mein hota hai
+  const [paymentQrPreview, setPaymentQrPreview] = useState<string | null>(null);
+  const [paymentQrUploading, setPaymentQrUploading] = useState(false);
+  const [paymentQrMsg, setPaymentQrMsg] = useState<string | null>(null);
+
   // force service select (BASIC downgrade)
   const [basicServiceKeep, setBasicServiceKeep] = useState<string[]>([]);
   const [basicSelectMsg, setBasicSelectMsg] = useState<string | null>(null);
@@ -77,8 +87,8 @@ export default function AdminPage() {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [platformConfig, setPlatformConfig] = useState<{ showPlanInfoIcon: boolean; showPlanBadge: boolean;
-    paidPrice: string; paidCurrency: string; bannedServiceTypes: string[] }>({ showPlanInfoIcon: false,
-    showPlanBadge: false, paidPrice: "", paidCurrency: "INR", bannedServiceTypes: [] });
+    paidPrice: string; paidCurrency: string; bannedServiceTypes: string[]; paymentQrEnabled: boolean; }>({ showPlanInfoIcon: false,
+    showPlanBadge: false, paidPrice: "", paidCurrency: "INR", bannedServiceTypes: [], paymentQrEnabled: false });
 
   // shop details edit
   const [shopDetail, setShopDetail] = useState<ShopDetailDto | null>(null);
@@ -137,16 +147,61 @@ export default function AdminPage() {
   // Tab navigation
   const [adminTab, setAdminTab] = useState<"overview" | "services" | "staff" | "settings" | "history" | "support">("overview");
 
+//   const refresh = useCallback(() => {
+//     Promise.all([getAdminOverview(), getAdminHistory(), getStaffUsers(), getShopDetails(), getPlatformConfig()])
+//       .then(([o, h, st, sd, cfg]) => {
+//         setOverview(o);
+//         setHistory(h);
+//         setStaff(st);
+//         setShopDetail(sd);
+//         setShopOpen(sd.open);
+//         setPlatformConfig({
+//                   showPlanInfoIcon: cfg.showPlanInfoIcon,
+//                   showPlanBadge: cfg.showPlanBadge,
+//                   paidPrice: cfg.paidPrice,
+//                   paidCurrency: cfg.paidCurrency,
+//                   bannedServiceTypes: cfg.bannedServiceTypes ?? [],
+//                   paymentQrEnabled: cfg.paymentQrEnabled,
+//                 });
+//         setPlatformConfig({ showPlanInfoIcon: cfg.showPlanInfoIcon, showPlanBadge: cfg.showPlanBadge,
+//           paidPrice: cfg.paidPrice, paidCurrency: cfg.paidCurrency, bannedServiceTypes: cfg.bannedServiceTypes ?? [] });
+//         setEditName(sd.name ?? "");
+//         setEditCountry(sd.country ?? "");
+//         setEditState(sd.state ?? "");
+//         setEditCity(sd.city ?? "");
+//         setEditPincode(sd.pincode ?? "");
+//         setEditPhone(sd.phone ?? "");
+//         setEditAddress(sd.address ?? "");
+//         setEditOpenTime(sd.openTime ?? "");
+//         setEditCloseTime(sd.closeTime ?? "");
+//         setEditOperatingDays(sd.operatingDays ?? "");
+//       })
+//       .finally(() => setLoading(false));
+//   }, []);
+
+
   const refresh = useCallback(() => {
-    Promise.all([getAdminOverview(), getAdminHistory(), getStaffUsers(), getShopDetails(), getPlatformConfig()])
-      .then(([o, h, st, sd, cfg]) => {
+    // Platform config alag call mein, taaki kisi aur API ke fail hone se ye na ruke
+    getPlatformConfig()
+      .then((cfg) => {
+        setPlatformConfig({
+          showPlanInfoIcon: cfg.showPlanInfoIcon,
+          showPlanBadge: cfg.showPlanBadge,
+          paidPrice: cfg.paidPrice,
+          paidCurrency: cfg.paidCurrency,
+          bannedServiceTypes: cfg.bannedServiceTypes ?? [],
+          paymentQrEnabled: cfg.paymentQrEnabled,
+        });
+      })
+      .catch(() => {});
+
+    Promise.all([getAdminOverview(), getAdminHistory(), getStaffUsers(), getShopDetails()])
+      .then(([o, h, st, sd]) => {
         setOverview(o);
         setHistory(h);
         setStaff(st);
         setShopDetail(sd);
         setShopOpen(sd.open);
-        setPlatformConfig({ showPlanInfoIcon: cfg.showPlanInfoIcon, showPlanBadge: cfg.showPlanBadge,
-          paidPrice: cfg.paidPrice, paidCurrency: cfg.paidCurrency, bannedServiceTypes: cfg.bannedServiceTypes ?? [] });
         setEditName(sd.name ?? "");
         setEditCountry(sd.country ?? "");
         setEditState(sd.state ?? "");
@@ -164,6 +219,15 @@ export default function AdminPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  //Shop ke paas pehle se uploaded payment QR hai toh preview load karo (ek baar)
+  useEffect(() => {
+    if (shopDetail?.hasPaymentQr && !paymentQrPreview) {
+      getPaymentQrBlob()
+        .then((blob) => setPaymentQrPreview(URL.createObjectURL(blob)))
+        .catch(() => {});
+    }
+  }, [shopDetail?.code]);
 
   async function toggleShopOpen() {
     setShopOpenToggling(true);
@@ -219,6 +283,18 @@ export default function AdminPage() {
     } catch { /* silent */ }
   }
 
+    // Multi-sheet Excel report — Summary sheet + har service ka apna sheet
+    // (section-wise tables aur totals ke saath)
+    async function handleExportExcel(): Promise<void> {
+      try {
+        const blob: Blob = await exportOrdersExcel();
+        const url: string = URL.createObjectURL(blob);
+        const a: HTMLAnchorElement = document.createElement("a");
+        a.href = url; a.download = "orders.xlsx"; a.click();
+        URL.revokeObjectURL(url);
+      } catch { /* silent */ }
+    }
+
   async function loadStaffAnalytics() {
     const data = await getStaffAnalytics();
     setStaffAnalytics(data);
@@ -236,6 +312,38 @@ export default function AdminPage() {
       setQrModal({ blobUrl, shopUrl });
     } catch { /* silent */ }
   }
+
+  // Payment QR - naya image upload karo (file input se)
+  async function handlePaymentQrUpload(file: File | undefined): Promise<void> {
+    if (!file) return;
+    setPaymentQrUploading(true);
+    setPaymentQrMsg(null);
+    try {
+      await uploadPaymentQr(file);
+      const blob = await getPaymentQrBlob();
+      if (paymentQrPreview) URL.revokeObjectURL(paymentQrPreview);
+      setPaymentQrPreview(URL.createObjectURL(blob));
+      setShopDetail((prev) => prev ? { ...prev, hasPaymentQr: true } : prev);
+      setPaymentQrMsg(null);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: string } })?.response?.data;
+      setPaymentQrMsg(typeof msg === "string" ? msg : "QR upload nahi ho paaya");
+    } finally {
+      setPaymentQrUploading(false);
+    }
+  }
+
+  // Payment QR - uploaded QR hatao
+  async function handlePaymentQrDelete(): Promise<void> {
+    try {
+      await deletePaymentQr();
+      if (paymentQrPreview) URL.revokeObjectURL(paymentQrPreview);
+      setPaymentQrPreview(null);
+      setShopDetail((prev) => prev ? { ...prev, hasPaymentQr: false } : prev);
+    } catch { /* silent */ }
+  }
+
+
   async function handleBasicServiceSelect() {
     if (basicServiceKeep.length < 1 || basicServiceKeep.length > 2) return;
     setBasicSelectMsg(null);
@@ -581,6 +689,48 @@ export default function AdminPage() {
                 <Button variant="ghost" onClick={openQrModal} className="text-sm">{t("admin.qrCodeView")}</Button>
               </div>
             </Card>
+
+            {/* Payment QR (UPI etc.) — sirf PAID plan mein aur jab superadmin ne feature ban nahi kiya ho */}
+            <div className="pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-sm font-medium">💳 Payment QR</p>
+                  <p className="text-xs text-gray-400">Apna UPI/payment QR upload karo — customer order place karne ke baad isse scan karega</p>
+                </div>
+              </div>
+
+              {!platformConfig.paymentQrEnabled ? (
+                <p className="text-xs text-amber-600 italic">Ye feature abhi platform par disable hai</p>
+              ) : shopDetail?.plan !== "PAID" ? (
+                <p className="text-xs text-gray-400 italic">Sirf PAID plan mein available hai — pehle upgrade karo</p>
+              ) : (
+                <div className="flex items-center gap-3">
+                  {paymentQrPreview && (
+                    <img src={paymentQrPreview} alt="Payment QR" className="w-16 h-16 rounded-lg border border-gray-200 object-contain" />
+                  )}
+                  <div className="flex-1">
+                    <label className="inline-block">
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={(e) => handlePaymentQrUpload(e.target.files?.[0])}
+                        disabled={paymentQrUploading}
+                        className="hidden"
+                      />
+                      <span className="text-xs bg-brand text-white px-3 py-1.5 rounded-lg cursor-pointer hover:opacity-90 inline-block">
+                        {paymentQrUploading ? "Uploading..." : paymentQrPreview ? "Replace QR" : "Upload QR"}
+                      </span>
+                    </label>
+                    {paymentQrPreview && (
+                      <button onClick={handlePaymentQrDelete} className="text-xs text-red-500 hover:text-red-600 ml-2">
+                        Remove
+                      </button>
+                    )}
+                    {paymentQrMsg && <p className="text-xs text-red-500 mt-1">{paymentQrMsg}</p>}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Aggregate history counts */}
             {history && (
@@ -1042,7 +1192,7 @@ export default function AdminPage() {
                 {shopDetail?.plan === "PAID" && (
                   <Card className="mb-4 border-t-4 border-t-violet-400">
                     <div className="flex gap-2">
-                      <Button variant="ghost" onClick={handleExportCsv} className="flex-1 text-sm">
+                      <Button variant="ghost" onClick={handleExportExcel} className="flex-1 text-sm">
                         {t("admin.exportCsv")}
                       </Button>
                       <Button variant="ghost" onClick={loadStaffAnalytics} className="flex-1 text-sm">

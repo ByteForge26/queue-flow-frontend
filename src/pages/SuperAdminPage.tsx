@@ -18,6 +18,7 @@ import {
   superAdminSetShowPlanInfoIcon,
   superAdminSetShowPlanBadge,
   superAdminSetPaidPrice,
+  superAdminSetPaymentQrEnabled,
   superAdminBulkSetPlan,
   superAdminSetPlan,
   superAdminFetchQr,
@@ -67,6 +68,11 @@ export default function SuperAdminPage(): Element {
 
   // showPlanBadge: Shop admin dashboard pe PAID/BASIC badge dikhaye ya nahi
   const [showPlanBadge, setShowPlanBadgeState] = useState(false);
+
+  // paymentQrEnabled: Payment QR (UPI etc.) feature globally on hai ya superadmin ne ban kiya hai.
+  // Disable karne par koi bhi shop (chahe PAID ho) naya QR upload nahi kar sakti, aur jo
+  // pehle se upload hai wo bhi customers ko dikhna band ho jaata hai.
+  const [paymentQrEnabled, setPaymentQrEnabledState] = useState<boolean>(true);
 
   // paidPrice: PAID plan ki price (e.g. "299") — upgrade button pe yahi dikhega
   const [paidPrice, setPaidPriceState] = useState("");
@@ -159,6 +165,7 @@ export default function SuperAdminPage(): Element {
       setShowPlanBadgeState(cfg.showPlanBadge);
       setPaidPriceState(cfg.paidPrice ?? "");
       setPaidCurrencyState(cfg.paidCurrency ?? "INR");
+      setPaymentQrEnabledState(cfg.paymentQrEnabled);
     } catch {
       // Token invalid ya expire ho gaya — localStorage clean karke logout
       localStorage.removeItem(SA_TOKEN_KEY);
@@ -239,6 +246,14 @@ export default function SuperAdminPage(): Element {
     const next: boolean = !showPlanInfoIcon;
     await superAdminSetShowPlanInfoIcon(next);
     setShowPlanInfoIconState(next);
+  }
+
+  // togglePaymentQrEnabled: Payment QR feature ko globally on/off (ban) karta hai.
+  // Disable karte hi sab shops ke customers ko QR dikhna band ho jaata hai.
+  async function togglePaymentQrEnabled(): Promise<void> {
+    const next: boolean = !paymentQrEnabled;
+    await superAdminSetPaymentQrEnabled(next);
+    setPaymentQrEnabledState(next);
   }
 
   // savePaidPrice: PAID plan ki price aur currency API me save karta hai.
@@ -623,6 +638,7 @@ export default function SuperAdminPage(): Element {
             {/* Tier system toggle — array me isliye hai ki baad me aur toggles add karna aasan rahe */}
             {[
               { label: "Tier system (BASIC/PAID limits)", desc: "Enforce limits on BASIC shops", val: tierSystemEnabled, toggle: (): void => setTierConfirm(!tierSystemEnabled) },
+              { label: "Payment QR (UPI etc.)", desc: "PAID shops apna payment QR upload/dikha sakti hain - disable karna global ban jaisa hai.", val: paymentQrEnabled, toggle: (): void => togglePaymentQrEnabled },
             ].map((item: { label: string; desc: string; val: boolean; toggle: () => void }): Element => (
               // Toggle switch UI — green jab ON, gray jab OFF
               <div key={item.label} className="flex items-center justify-between">

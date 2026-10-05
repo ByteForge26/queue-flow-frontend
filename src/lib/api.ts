@@ -101,6 +101,8 @@ import type {
   TicketDto,
   TicketStatus,
   UpdateShopCommand,
+  ServiceSectionDto,
+  ServiceSectionCommand,
 } from "./types";
 
 
@@ -264,6 +266,11 @@ export async function superAdminSetPaidPrice(
   await saApi.patch("/config/paid-price", null, { params: { price, currency } });
 }
 
+// SuperAdmin: payment QR feature ko globally on/off (ban) karo
+export async function superAdminSetPaymentQrEnabled(value: boolean): Promise<void> {
+  await saApi.patch("/config/payment-qr-enabled", null, { params: { value } });
+}
+
 // SuperAdmin: kisi specific shop ka plan change karo
 // keepSectionCodes: plan downgrade pe kaunse sections rakhne hain uski list
 export async function superAdminSetPlan(
@@ -325,6 +332,13 @@ export async function getCustomerHistory(
 export async function getFormConfig(code: string): Promise<FormConfigDto> {
   const { data } = await api.get(`/public/business/${code}/form-config`);
   return data;
+}
+
+// Payment QR image ka direct public URL — auth ki zaroorat nahi, isliye
+// seedha <img src={...}> mein use ho sakta hai (blob fetch karne ki zaroorat nahi).
+// Caller pehle FormConfigDto.hasPaymentQr check kare taaki broken image na dikhe.
+export function getPublicPaymentQrUrl(businessCode: string): string {
+  return `${API_BASE_URL}/public/business/${businessCode}/payment-qr`;
 }
 
 // Shop ki basic public details fetch karo (naam, timing, sections, etc.)
@@ -476,6 +490,35 @@ export async function getAdminQrBlob(): Promise<Blob> {
   return res.data;
 }
 
+// ============================================================
+// PAYMENT QR (admin apna UPI/payment QR upload karta hai — PAID plan only,
+// aur superadmin ke "payment-qr-enabled" switch se bhi gated hai)
+// ============================================================
+
+// Naya payment QR image upload karo (PNG/JPEG/WEBP, max 2MB)
+// multipart/form-data — ye codebase ka pehla file-upload call hai
+export async function uploadPaymentQr(file: File): Promise<void> {
+  const formData = new FormData();
+  formData.append("file", file);
+  await api.post("/admin/shop/payment-qr", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+}
+
+// Apna uploaded payment QR preview karne ke liye blob fetch karo
+export async function getPaymentQrBlob(): Promise<Blob> {
+  const res: AxiosResponse<any, any> = await api.get("/admin/shop/payment-qr", {
+    responseType: "blob",
+  });
+  return res.data;
+}
+
+// Uploaded payment QR hatao — customer ko ab "Scan to pay" nahi dikhega
+export async function deletePaymentQr(): Promise<void> {
+  await api.delete("/admin/shop/payment-qr");
+}
+
+
 // Shop ke QR code ka shareable URL string fetch karo
 // Blob create karne ki jagah sirf URL string chahiye to yahi use karo
 export async function getAdminQrUrl(): Promise<string> {
@@ -511,6 +554,16 @@ export async function exportOrdersCsv(): Promise<Blob> {
   }); // CSV file = binary
   return res.data;
 }
+
+// Multi-sheet Excel (.xlsx) report download karo — "Summary" sheet + har service ka
+// apna sheet (section-wise tables aur totals ke saath). CSV se zyada detailed.
+export async function exportOrdersExcel(): Promise<Blob> {
+  const res: AxiosResponse<any, any> = await api.get("/admin/shop/export-excel", {
+    responseType: "blob",
+  });
+  return res.data;
+}
+
 
 // Staff members ki analytics fetch karo - kaun kitna kaam kiya, performance, etc.
 export async function getStaffAnalytics(): Promise<StaffStatsDto[]> {
@@ -713,6 +766,73 @@ export async function setMenuItemActive(
 export async function deleteMenuItem(itemId: number): Promise<void> {
   await api.delete(`/admin/menu/${itemId}`);
 }
+
+  // Bulk move multiple menu items to a service section
+  export async function moveItemsToSection(
+    sectionCode: string,
+    itemIds: number[],
+    serviceSectionId: number | null
+  ): Promise<void> {
+    await api.patch(`/admin/sections/${sectionCode}/menu/move-to-section`, {
+      itemIds,
+      serviceSectionId,
+    });
+  }
+
+  // ============================================================
+  // ADMIN SERVICE SECTION MANAGEMENT
+  // (Service sections = subsections within a business for better organization)
+  // E.g., "Pizza", "Burgers" within "Food Counter" business
+  // ============================================================
+
+  // Kisi business ke saare service sections (groupings) fetch karo
+  export async function getServiceSections(sectionCode: string): Promise<ServiceSectionDto[]> {
+    const { data } = await api.get(`/admin/sections/${sectionCode}/subsections`);
+    return data;
+  }
+
+  // Naya service section add karo (e.g., "Pizza", "Burgers")
+  // FREE plan: max 5 sections, PAID plan: unlimited
+  export async function addServiceSection(
+    sectionCode: string,
+    cmd: ServiceSectionCommand
+  ): Promise<ServiceSectionDto> {
+    const { data } = await api.post(`/admin/sections/${sectionCode}/subsections`, cmd);
+    return data;
+  }
+
+  // Service section ka naam update karo
+  export async function updateServiceSection(
+    sectionId: number,
+    cmd: ServiceSectionCommand
+  ): Promise<ServiceSectionDto> {
+    const { data } = await api.patch(`/admin/subsections/${sectionId}`, cmd);
+    return data;
+  }
+
+  // Service section ko active ya inactive toggle karo
+  export async function setServiceSectionActive(
+    sectionId: number,
+    value: boolean
+  ): Promise<ServiceSectionDto> {
+    const { data } = await api.patch(`/admin/subsections/${sectionId}/active`, null, {
+      params: { value },
+    });
+    return data;
+  }
+
+  // Service section delete karo
+  export async function deleteServiceSection(sectionId: number): Promise<void> {
+    await api.delete(`/admin/subsections/${sectionId}`);
+  }
+
+  // Service sections ko reorder karo
+  export async function reorderServiceSections(
+    sectionCode: string,
+    sectionIds: number[]
+  ): Promise<void> {
+    await api.patch(`/admin/subsections/reorder`, { sectionCode, sectionIds });
+  }
 
 // ============================================================================
 // ADMIN FIELD MANAGEMENT
