@@ -378,7 +378,7 @@ export default function MenuPage(): JSX.Element {
             </p>
 
             {/* Add Section Input — limit cross hone par disable ho jaata hai */}
-            <div className="mb-2 flex gap-1">
+            <div className="mb-2 flex items-center gap-1">
               <input
                 type="text"
                 placeholder="New..."
@@ -391,13 +391,13 @@ export default function MenuPage(): JSX.Element {
                   if (e.key === "Enter") void addSection();
                 }}
                 disabled={atPlanLimit}
-                className="flex-1 border border-blue-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1
+                className="min-w-0 flex-1 h-9 border border-blue-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1
                   focus:ring-blue-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
               <Button
                 onClick={addSection}
                 disabled={!newSectionName.trim() || addingSection || atPlanLimit}
-                className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                className="!h-9 !w-9 !p-0 shrink-0 inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white text-xs"
               >
                 +
               </Button>
