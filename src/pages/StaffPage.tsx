@@ -1,7 +1,7 @@
 // =====================================================================
 // StaffPage.tsx
 // =====================================================================
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { ChangeEvent, ReactElement as Element } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
@@ -94,6 +94,75 @@ export default function StaffPage(): Element {
   // null hone par error banner nahi dikhta
   const [error, setError] = useState<string | null>(null);
 
+  const [newOrderAlertsEnabled, setNewOrderAlertsEnabled] = useState(false);
+  const [newOrderAlertError, setNewOrderAlertError] = useState<string | null>(null);
+  const [newOrderNotice, setNewOrderNotice] = useState<string | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const knownTicketIdsRef = useRef<Set<number> | null>(null);
+  const alertsEnabledRef = useRef(false);
+
+  useEffect((): (() => void) => {
+    return (): void => {
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        void audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  useEffect((): (() => void) | undefined => {
+    if (!newOrderNotice) return;
+    const timeout = window.setTimeout((): void => setNewOrderNotice(null), 6000);
+    return (): void => window.clearTimeout(timeout);
+  }, [newOrderNotice]);
+
+  const alertForNewOrders = useCallback((tickets: TicketDto[]): void => {
+    for (const ticket of tickets) {
+      const message = t("staff.newOrderNotice", {
+        id: ticket.id,
+        name: ticket.customerName,
+      });
+      setNewOrderNotice(message);
+
+      const audioContext = audioContextRef.current;
+      if (audioContext?.state === "running") {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.frequency.value = 880;
+        gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.25);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.26);
+      }
+
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(t("staff.newOrderTitle"), { body: message });
+      }
+    }
+  }, [t]);
+
+  async function enableNewOrderAlerts(): Promise<void> {
+    setNewOrderAlertError(null);
+    try {
+      if ("Notification" in window && Notification.permission === "default") {
+        await Notification.requestPermission();
+      }
+
+      if ("AudioContext" in window) {
+        const audioContext = audioContextRef.current ?? new AudioContext();
+        audioContextRef.current = audioContext;
+        if (audioContext.state === "suspended") await audioContext.resume();
+      }
+
+      setNewOrderAlertsEnabled(true);
+      alertsEnabledRef.current = true;
+    } catch {
+      setNewOrderAlertError(t("staff.newOrderAlertEnableFailed"));
+    }
+  }
+
   // paymentTicket — woh order jis par payment modal khula hai
   // null hone par modal band rehta hai
   const [paymentTicket, setPaymentTicket] = useState<TicketDto | null>(null);
@@ -147,6 +216,15 @@ export default function StaffPage(): Element {
       getStaffHistory(sectionCode), // history fetch karo
     ])
       .then(([q, fq, s, h]: [TicketDto[], TicketDto[], DashboardStatsDto, HistoryDto]): void => {
+        const knownTicketIds = knownTicketIdsRef.current;
+        const currentTickets = [...q, ...fq];
+        const newOrders = knownTicketIds
+          ? currentTickets.filter((ticket: TicketDto): boolean => !knownTicketIds.has(ticket.id))
+          : [];
+        knownTicketIdsRef.current = new Set(currentTickets.map((ticket: TicketDto): number => ticket.id));
+        if (alertsEnabledRef.current && newOrders.length > 0) {
+          alertForNewOrders(newOrders);
+        }
         setQueue(q);
         setFutureQueue(fq);
         setStats(s);
@@ -154,7 +232,7 @@ export default function StaffPage(): Element {
       })
       // Loading spinner band karo, chahe success ho ya failure
       .finally((): void => setLoading(false));
-  }, [sectionCode]);
+  }, [sectionCode, alertForNewOrders]);
 
   // ---------------------------------------------------------------------
   // EFFECT 1: Initial data load — sectionCode ya refresh change hone par
@@ -164,6 +242,7 @@ export default function StaffPage(): Element {
   //   1. Section ka statusFlow fetch karo (getFormConfig) — advance logic ke liye zaroori
   //   2. refresh() call karo — queue, future queue, stats, history sab laao
   useEffect((): void => {
+    knownTicketIdsRef.current = null;
     getFormConfig(sectionCode).then((cfg: FormConfigDto): void => setStatusFlow(cfg.statusFlow as TicketStatus[]));
     refresh();
   }, [sectionCode, refresh]);
@@ -418,6 +497,54 @@ export default function StaffPage(): Element {
           {error}
         </div>
       )}
+
+      {newOrderNotice && (
+        <div
+          className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 shadow-sm"
+          role="status"
+          aria-live="polite"
+        >
+          {newOrderNotice}
+        </div>
+      )}
+
+      <Card className="mb-5 border-2 border-teal-100 bg-gradient-to-br from-white to-teal-50/70 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-bold text-slate-900">{t("staff.newOrderAlertTitle")}</h2>
+            <p className="mt-1 text-sm text-slate-600">{t("staff.newOrderAlertDescription")}</p>
+            <p className="mt-2 text-xs font-semibold text-slate-500">
+              {t(newOrderAlertsEnabled ? "staff.newOrderAlertsOn" : "staff.newOrderAlertsOff")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={(): void => {
+              if (newOrderAlertsEnabled) {
+                setNewOrderAlertsEnabled(false);
+                alertsEnabledRef.current = false;
+              } else {
+                void enableNewOrderAlerts();
+              }
+            }}
+            className={`w-full shrink-0 rounded-xl px-4 py-3 text-sm font-semibold shadow-sm transition sm:w-auto ${
+              newOrderAlertsEnabled
+                ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                : "bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:-translate-y-0.5 hover:shadow-lg"
+            }`}
+          >
+            {t(newOrderAlertsEnabled ? "staff.disableNewOrderAlerts" : "staff.enableNewOrderAlerts")}
+          </button>
+        </div>
+        {newOrderAlertError && (
+          <p className="mt-3 text-sm text-red-600" role="alert">{newOrderAlertError}</p>
+        )}
+        {newOrderAlertsEnabled && "Notification" in window && Notification.permission === "denied" && (
+          <p className="mt-3 rounded-xl bg-amber-100 px-3 py-2 text-sm text-amber-900">
+            {t("staff.newOrderNotificationsBlocked")}
+          </p>
+        )}
+      </Card>
 
       {/* ------------------------------------------------------------- */}
       {/* STATS BAR — 4 colored cards: Waiting / In Progress / Ready / Today Total */}

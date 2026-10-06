@@ -450,6 +450,16 @@ const en: Dict = {
   "staff.payYes": "Yes, payment received – Complete",
   "staff.payNo": "No – Payment pending, not now",
   "staff.adminRole": "Admin",
+  "staff.newOrderAlertTitle": "Get new order alerts",
+  "staff.newOrderAlertDescription": "Turn on a sound and browser notification when a new order is placed.",
+  "staff.enableNewOrderAlerts": "Enable new order alerts and sound",
+  "staff.disableNewOrderAlerts": "Turn off new order alerts and sound",
+  "staff.newOrderAlertsOn": "New order alerts are on",
+  "staff.newOrderAlertsOff": "New order alerts are off",
+  "staff.newOrderTitle": "New order received",
+  "staff.newOrderNotice": "New order #{id} from {name}.",
+  "staff.newOrderAlertEnableFailed": "Alerts could not be enabled. Check your browser settings and try again.",
+  "staff.newOrderNotificationsBlocked": "Sound alerts are enabled. Allow notifications for this site in your browser settings to also receive pop-ups.",
 
   // menu page
   "menu.title": "Menu – {section}",
@@ -966,6 +976,16 @@ const hi: Dict = {
   "staff.payYes": "Haan, payment mil gaya – Complete karo",
   "staff.payNo": "Nahi – Payment pending, abhi nahi",
   "staff.adminRole": "Admin",
+  "staff.newOrderAlertTitle": "Naye order ke alert paayein",
+  "staff.newOrderAlertDescription": "Naya order place hote hi sound aur browser notification paane ke liye chalu karein.",
+  "staff.enableNewOrderAlerts": "Naye order ka alert aur sound chalu karo",
+  "staff.disableNewOrderAlerts": "Naye order ka alert aur sound band karo",
+  "staff.newOrderAlertsOn": "Naye order ke alerts chalu hain",
+  "staff.newOrderAlertsOff": "Naye order ke alerts band hain",
+  "staff.newOrderTitle": "Naya order aaya",
+  "staff.newOrderNotice": "{name} ka naya order #{id}.",
+  "staff.newOrderAlertEnableFailed": "Alerts chalu nahi ho sake. Browser settings check karke dobara try karo.",
+  "staff.newOrderNotificationsBlocked": "Sound alert chalu hai. Pop-up notification ke liye browser settings mein is site ki notifications allow karo.",
 
   // menu page
   "menu.title": "Menu – {section}",
