@@ -276,6 +276,7 @@ export default function TrackPage(): Element {
             <ShopContact
               phone={shopPhone}
               address={shopAddress}
+              tone="inverse"
             />
           </div>
         </div>

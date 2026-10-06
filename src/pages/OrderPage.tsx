@@ -259,14 +259,14 @@ export default function OrderPage() {
           <h1 className="mt-2 text-3xl font-bold">{config.businessName}</h1>
           {/* Agar shopName alag hai (parent shop) to woh aur city dikhao */}
           {config.shopName && (
-            <p className="text-gray-500 text-sm">
+            <p className="text-sm text-white/90">
               {config.shopName}{config.shopCity ? ` · ${config.shopCity}` : ""}
             </p>
           )}
           {/* Shop ka phone aur address — ShopContact component handle karta hai */}
-          <ShopContact phone={config.shopPhone} address={config.shopAddress} />
+          <ShopContact phone={config.shopPhone} address={config.shopAddress} tone="inverse" />
           {/* Customer ko instruction — form fill karne ke liye */}
-          <p className="text-gray-500 text-sm mt-2">{t("order.fillRequirement")}</p>
+          <p className="mt-3 text-sm font-medium text-white/95">{t("order.fillRequirement")}</p>
         </div>
 
         {/* ------------------------------------------------------------------ */}
