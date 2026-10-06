@@ -5,7 +5,7 @@
 // =====================================================================
 import { useState } from "react";
 import type { ChangeEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
 import { login, ownerSignup } from "../lib/api";
 import { saveAuth } from "../lib/auth";
@@ -281,7 +281,15 @@ export default function ShopAuthPage() {
               <div className="font-semibold text-slate-900">{t("auth.title")}</div>
             </div>
           </div>
-          <LanguageToggle />
+          <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              className="rounded-full border border-slate-200 bg-white/90 px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-brand"
+            >
+              ← {t("auth.backHome")}
+            </Link>
+            <LanguageToggle />
+          </div>
         </div>
 
         <div className="premium-shell p-4 sm:p-5">

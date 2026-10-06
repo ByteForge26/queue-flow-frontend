@@ -165,6 +165,12 @@ const en: Dict = {
   "track.yourDetails": "Your details",
   "track.commentLabel": "Comment",
   "track.liveNote": "This screen updates live – no need to refresh.",
+  "track.enableAlerts": "Enable status alerts and sound",
+  "track.disableAlerts": "Turn off status alerts and sound",
+  "track.statusChangedTitle": "Order status changed",
+  "track.statusChanged": "Your order status is now {status}.",
+  "track.alertEnableFailed": "Alerts could not be enabled. Check your browser settings and try again.",
+  "track.notificationsBlocked": "Sound alerts are enabled. Allow notifications for this site in your browser settings to also receive pop-ups.",
   "track.backLink": "← New order / back to shop",
   "track.scanToPay": "Scan to pay",
   "track.stepPlaced": "Order placed",
@@ -183,6 +189,7 @@ const en: Dict = {
 
   // shop auth
   "auth.title": "Shop",
+  "auth.backHome": "Main page",
   "auth.subtitle": "Owner or staff — login or register",
   "auth.ownerTab": "Owner (Admin)",
   "auth.staffTab": "Staff",
@@ -671,6 +678,12 @@ const hi: Dict = {
   "track.yourDetails": "Aapki detail",
   "track.commentLabel": "Comment",
   "track.liveNote": "Ye screen live update hoti hai – refresh karne ki zarurat nahi.",
+  "track.enableAlerts": "Status alert aur sound chalu karo",
+  "track.disableAlerts": "Status alert aur sound band karo",
+  "track.statusChangedTitle": "Order ka status badla",
+  "track.statusChanged": "Aapke order ka status ab {status} hai.",
+  "track.alertEnableFailed": "Alerts chalu nahi ho sake. Browser settings check karke dobara try karo.",
+  "track.notificationsBlocked": "Sound alert chalu hai. Pop-up notification ke liye browser settings mein is site ki notifications allow karo.",
   "track.backLink": "← Naya order / shop pe wapas jaao",
   "track.scanToPay": "Payment ke liye QR scan karo",
   "track.stepPlaced": "Order placed",
@@ -689,6 +702,7 @@ const hi: Dict = {
 
   // shop auth
   "auth.title": "Shop",
+  "auth.backHome": "Main page par jao",
   "auth.subtitle": "Owner ya staff — login ya register",
   "auth.ownerTab": "Owner (Admin)",
   "auth.staffTab": "Staff",

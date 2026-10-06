@@ -1,7 +1,7 @@
 // ================================================================
 // TrackPage.tsx
 // ================================================================
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { ReactElement as Element } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useT } from "../i18n/LanguageContext";
@@ -62,6 +62,18 @@ export default function TrackPage(): Element {
   // (status, items, times, etc.)
   // Shuru mein null hai jab tak API se data nahi aata
   const [ticket, setTicket] = useState<TicketDto | null>(null);
+  const [alertsEnabled, setAlertsEnabled] = useState<boolean>(false);
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
+  const [alertError, setAlertError] = useState<string | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  useEffect((): (() => void) => {
+    return (): void => {
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        void audioContextRef.current.close();
+      }
+    };
+  }, []);
 
   // statusFlow — shop ka custom status sequence,
   // e.g. ["PLACED", "ACCEPTED", "IN_PROGRESS", "COMPLETED"]
@@ -158,10 +170,70 @@ export default function TrackPage(): Element {
   // ================================================================
 
   useStomp(`/topic/tickets/${id}`, (body: any): void => {
-    if (body?.ticket) {
-      setTicket(body.ticket as TicketDto);
+    if (!body?.ticket) return;
+
+    const updatedTicket = body.ticket as TicketDto;
+    if (ticket && updatedTicket.status !== ticket.status) {
+      const message = t("track.statusChanged", {
+        status: t(`status.${updatedTicket.status}`),
+      });
+      setStatusNotice(message);
+
+      if (alertsEnabled) {
+        const audioContext = audioContextRef.current;
+        if (audioContext?.state === "running") {
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          oscillator.frequency.value = 880;
+          gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.25);
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.26);
+        }
+
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(t("track.statusChangedTitle"), { body: message });
+        }
+      }
+
+      setTicket(updatedTicket);
+      return;
     }
+
+    setTicket(updatedTicket);
   });
+
+  useEffect((): (() => void) | undefined => {
+    if (!statusNotice) return;
+    const timeout = window.setTimeout((): void => setStatusNotice(null), 6000);
+    return (): void => window.clearTimeout(timeout);
+  }, [statusNotice]);
+
+  async function enableAlerts(): Promise<void> {
+    setAlertError(null);
+    try {
+      if ("Notification" in window && Notification.permission === "default") {
+        await Notification.requestPermission();
+      }
+
+      if ("AudioContext" in window) {
+        const audioContext = audioContextRef.current ?? new AudioContext();
+        audioContextRef.current = audioContext;
+        if (audioContext.state === "suspended") await audioContext.resume();
+      }
+
+      setAlertsEnabled(true);
+    } catch {
+      setAlertError(t("track.alertEnableFailed"));
+    }
+  }
+
+  function disableAlerts(): void {
+    setAlertsEnabled(false);
+  }
 
   // ================================================================
   // cancel() — ticket cancel karne ka function
@@ -266,6 +338,16 @@ export default function TrackPage(): Element {
               <StatusBadge status={ticket.status} />
             </div>
           </div>
+
+          {statusNotice && (
+            <div
+              className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900 shadow-sm"
+              role="status"
+              aria-live="polite"
+            >
+              {statusNotice}
+            </div>
+          )}
 
           <p className="mt-3 text-sm text-indigo-100">
             {shopName ? `${shopName}${shopCity ? ` · ${shopCity}` : ""}` : ""}
@@ -645,9 +727,20 @@ export default function TrackPage(): Element {
 
         {/* "Live updates on" note —
             user ko batata hai ki page automatically update hota hai */}
-        <p className="text-center text-xs text-gray-400 mt-4">
-          {t("track.liveNote")}
-        </p>
+        <div className="mt-4 flex flex-col items-center gap-2 text-center">
+          <p className="text-xs text-gray-500">{t("track.liveNote")}</p>
+          <button
+            type="button"
+            onClick={alertsEnabled ? disableAlerts : enableAlerts}
+            className="rounded-full border border-indigo-200 bg-white px-4 py-2 text-xs font-semibold text-brand shadow-sm transition hover:bg-indigo-50"
+          >
+            {alertsEnabled ? t("track.disableAlerts") : t("track.enableAlerts")}
+          </button>
+          {alertError && <p className="text-xs text-red-600" role="alert">{alertError}</p>}
+          {alertsEnabled && "Notification" in window && Notification.permission === "denied" && (
+            <p className="max-w-sm text-xs text-amber-700">{t("track.notificationsBlocked")}</p>
+          )}
+        </div>
 
         {/* ============================================================
             BACK LINK
