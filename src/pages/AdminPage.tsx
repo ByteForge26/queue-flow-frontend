@@ -902,7 +902,7 @@ export default function AdminPage() {
                               : "common.remove")}</span> – {t(s.hasOrders ? "admin.deleteTooltip" : "admin.removeTooltip")}</p>
                           </div>
                         )}
-                        <div className="grid grid-cols-4 gap-2 text-center">
+                        <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
                           <MiniStat label={t("admin.waiting")} value={s.waiting} valueClass="text-amber-600" />
                           <MiniStat label={t("admin.inProgress")} value={s.inProgress} valueClass="text-blue-600" />
                           <MiniStat label={t("admin.ready")} value={s.ready} valueClass="text-emerald-600" />

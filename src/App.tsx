@@ -59,7 +59,8 @@
 //        import MyApp from './App' – ye bhi kaam karega.
 // =====================================================================
 
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { useLayoutEffect } from "react";
 // React Router se teen cheezein import ki hain:
 //   - Routes   : Saare Route ko wrap karne wala container
 //   - Route    : Ek specific URL path ko ek component se map karta hai
@@ -110,6 +111,12 @@ import SuperAdminPage from "./pages/SuperAdminPage";
 // Isko main.tsx mein render kiya jaata hai.
 // Iska koi apna state ya props nahi hain – sirf routes define karta hai.
 export default function App() {
+  const { pathname } = useLocation();
+
+  useLayoutEffect((): void => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
   return (
     // <Routes> ek special wrapper hai jo browser ki current URL check karta hai
     // aur usse match karne wala pehla <Route> render karta hai.

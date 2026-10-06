@@ -93,6 +93,10 @@ import { LanguageProvider } from "./i18n/LanguageContext";
 // na aaye.
 import "./index.css";
 
+if ("scrollRestoration" in window.history) {
+  window.history.scrollRestoration = "manual";
+}
+
 // ReactDOM.createRoot():
 //   - document.getElementById("root") — index.html mein ek
 //     <div id="root"></div> hota hai; React wahan mount hota hai.

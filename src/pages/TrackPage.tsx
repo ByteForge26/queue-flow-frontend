@@ -339,16 +339,6 @@ export default function TrackPage(): Element {
             </div>
           </div>
 
-          {statusNotice && (
-            <div
-              className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900 shadow-sm"
-              role="status"
-              aria-live="polite"
-            >
-              {statusNotice}
-            </div>
-          )}
-
           <p className="mt-3 text-sm text-indigo-100">
             {shopName ? `${shopName}${shopCity ? ` · ${shopCity}` : ""}` : ""}
           </p>
@@ -362,6 +352,51 @@ export default function TrackPage(): Element {
             />
           </div>
         </div>
+
+        {statusNotice && (
+          <div
+            className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-sm"
+            role="status"
+            aria-live="polite"
+          >
+            {statusNotice}
+          </div>
+        )}
+
+        <Card className="mb-4 border-2 border-indigo-100 bg-gradient-to-br from-white via-white to-indigo-50/80 p-4 shadow-[0_14px_35px_rgba(79,70,229,0.1)] sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-xl text-brand" aria-hidden="true">
+                🔔
+              </span>
+              <div>
+                <h2 className="font-bold text-slate-900">{t("track.alertTitle")}</h2>
+                <p className="mt-1 text-sm leading-5 text-slate-600">{t("track.alertDescription")}</p>
+                <span className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  alertsEnabled ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${alertsEnabled ? "bg-emerald-500" : "bg-slate-400"}`} />
+                  {t(alertsEnabled ? "track.alertsOn" : "track.alertsOff")}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={alertsEnabled ? disableAlerts : enableAlerts}
+              className={`w-full shrink-0 rounded-xl px-4 py-3 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-4 sm:w-auto ${
+                alertsEnabled
+                  ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 focus:ring-slate-100"
+                  : "bg-gradient-to-r from-brand to-indigo-600 text-white shadow-indigo-500/20 hover:-translate-y-0.5 hover:shadow-lg focus:ring-indigo-200"
+              }`}
+            >
+              {t(alertsEnabled ? "track.disableAlerts" : "track.enableAlerts")}
+            </button>
+          </div>
+          {alertError && <p className="mt-3 text-sm text-red-600" role="alert">{alertError}</p>}
+          {alertsEnabled && "Notification" in window && Notification.permission === "denied" && (
+            <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">{t("track.notificationsBlocked")}</p>
+          )}
+        </Card>
 
         {/* ---- PAYMENT QR CARD ----
             Admin ne apna payment QR (UPI etc.) upload kiya ho tabhi dikhta hai.
@@ -729,17 +764,6 @@ export default function TrackPage(): Element {
             user ko batata hai ki page automatically update hota hai */}
         <div className="mt-4 flex flex-col items-center gap-2 text-center">
           <p className="text-xs text-gray-500">{t("track.liveNote")}</p>
-          <button
-            type="button"
-            onClick={alertsEnabled ? disableAlerts : enableAlerts}
-            className="rounded-full border border-indigo-200 bg-white px-4 py-2 text-xs font-semibold text-brand shadow-sm transition hover:bg-indigo-50"
-          >
-            {alertsEnabled ? t("track.disableAlerts") : t("track.enableAlerts")}
-          </button>
-          {alertError && <p className="text-xs text-red-600" role="alert">{alertError}</p>}
-          {alertsEnabled && "Notification" in window && Notification.permission === "denied" && (
-            <p className="max-w-sm text-xs text-amber-700">{t("track.notificationsBlocked")}</p>
-          )}
         </div>
 
         {/* ============================================================

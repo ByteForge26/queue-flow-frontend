@@ -360,8 +360,8 @@ export default function StaffPage(): Element {
       {/* Right side: section dropdown (agar multiple), admin link, refresh, logout, language */}
       {/* ------------------------------------------------------------- */}
       <div className="mb-4 rounded-[28px] bg-gradient-to-r from-slate-900 via-teal-700 to-cyan-600 p-4 text-white shadow-[0_20px_45px_rgba(13,148,136,0.18)]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {/* Live indicator — animated pulsing dot bata raha hai page real-time connected hai */}
             <span className="w-2.5 h-2.5 rounded-full bg-teal-300 animate-pulse flex-shrink-0" />
             <div>
@@ -378,7 +378,7 @@ export default function StaffPage(): Element {
               <select
                 value={sectionCode}
                 onChange={(e: ChangeEvent<HTMLSelectElement>) => navigate(`/staff/${e.target.value}`)}
-                className="border border-teal-400 bg-teal-700/50 text-white rounded-xl px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/40"
+                className="w-full border border-teal-400 bg-teal-700/50 text-white rounded-xl px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/40 sm:w-auto"
               >
                 {sections.map((s: SectionDto): Element => (
                   <option key={s.code} value={s.code} className="text-gray-800 bg-white">
@@ -424,7 +424,7 @@ export default function StaffPage(): Element {
       {/* stats null nahi hai tabhi render hota hai (initial load ke baad aata hai) */}
       {/* ------------------------------------------------------------- */}
       {stats && (
-        <div className="grid grid-cols-4 gap-3 mb-6">
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label={t("admin.waiting")} value={stats.waiting} bgClass="bg-amber-50" textClass="text-amber-700" />
           <Stat label={t("admin.inProgress")} value={stats.inProgress} bgClass="bg-blue-50" textClass="text-blue-700" />
           <Stat label={t("admin.ready")} value={stats.ready} bgClass="bg-emerald-50" textClass="text-emerald-700" />

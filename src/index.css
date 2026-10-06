@@ -18,8 +18,11 @@
 }
 
 html {
-  scroll-behavior: smooth;
   background: var(--bg-primary);
+}
+
+body {
+  overflow-x: clip;
 }
 
 body {
