@@ -356,17 +356,19 @@ export default function SuperAdminPage(): Element {
   if (!token) {
     return (
       // Login screen — centered card layout
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white rounded-2xl shadow border border-gray-100 p-8 w-full max-w-sm">
-          <h1 className="text-xl font-bold text-center mb-1">Super Admin</h1>
-          <p className="text-xs text-gray-400 text-center mb-5">Developer access only</p>
-          {/* Login form — username, password, error message, aur login button */}
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.18),_transparent_30%),linear-gradient(180deg,#f8faff_0%,#eef2ff_100%)] px-4 py-12">
+        <div className="mx-auto w-full max-w-md rounded-[28px] border border-white/60 bg-white/80 p-8 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+          <div className="mb-6 text-center">
+            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-brand to-violet-600 text-xl shadow-lg shadow-indigo-200">⚙️</div>
+            <h1 className="text-2xl font-bold text-slate-900">Super Admin</h1>
+            <p className="mt-1 text-xs uppercase tracking-[0.22em] text-slate-500">Developer access only</p>
+          </div>
           <div className="space-y-3">
             <input
               value={loginUser}
               onChange={(e: ChangeEvent<HTMLInputElement>): void => setLoginUser(e.target.value)}
               placeholder="Username"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/40"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
             />
             <input
               type="password"
@@ -374,12 +376,12 @@ export default function SuperAdminPage(): Element {
               onChange={(e: ChangeEvent<HTMLInputElement>): void => setLoginPw(e.target.value)}
               onKeyDown={(e: KeyboardEvent<HTMLInputElement>): false | Promise<void> => e.key === "Enter" && handleLogin()}
               placeholder="Password"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/40"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
             />
             {loginErr && <p className="text-xs text-red-500">{loginErr}</p>}
             <button
               onClick={handleLogin}
-              className="w-full bg-brand text-white py-2.5 rounded-xl font-medium hover:bg-brand-dark transition"
+              className="w-full rounded-xl bg-gradient-to-r from-brand to-indigo-600 py-2.5 font-medium text-white shadow-[0_12px_30px_rgba(79,70,229,0.22)] transition hover:translate-y-[-1px]"
             >
               Login
             </button>
@@ -391,11 +393,11 @@ export default function SuperAdminPage(): Element {
 
   return (
     // Main panel layout — full height, max-width centered, flex column
-    <div className="h-screen flex flex-col max-w-5xl mx-auto px-4">
+    <div className="mx-auto flex h-screen max-w-6xl flex-col px-4 py-4">
       {/* Fixed header — hamesha upar dikhai deta hai, scroll ke saath nahi jaata */}
-      <div className="py-4 border-b border-gray-100 bg-white">
+      <div className="border-b border-slate-200 bg-white/80 pb-4 backdrop-blur-xl">
         {/* Header bar — title, shops count, Refresh aur Logout buttons */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-700 text-white rounded-2xl px-4 py-3 mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between rounded-[28px] bg-gradient-to-r from-slate-900 via-slate-800 to-violet-700 px-4 py-3 text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div>
             <h1 className="text-xl font-bold">Super Admin Panel</h1>
             <p className="text-xs text-slate-300">{shops.length} shops registered</p>
@@ -404,7 +406,6 @@ export default function SuperAdminPage(): Element {
             <button onClick={loadShops} className="text-sm text-slate-300 hover:text-white">
               Refresh
             </button>
-            {/* Logout: localStorage se token hatao aur token state empty karo */}
             <button
               onClick={(): void => {
                 localStorage.removeItem(SA_TOKEN_KEY);
@@ -419,7 +420,7 @@ export default function SuperAdminPage(): Element {
 
         {/* Tab navigation — shops, services, audit, security, settings
             Har tab click pe appropriate data load function call hota hai */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {(["shops", "services", "audit", "security", "settings"] as const).map((tab) => (
             <button
               key={tab}
@@ -429,8 +430,8 @@ export default function SuperAdminPage(): Element {
                 else if (tab === "services") loadServiceBans();
                 else setActiveTab(tab);
               }}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize ${
-                activeTab === tab ? "bg-slate-700 text-white" : "bg-gray-100 text-gray-600"
+              className={`rounded-xl px-3 py-1.5 text-sm font-medium capitalize transition ${
+                activeTab === tab ? "bg-gradient-to-r from-brand to-indigo-600 text-white shadow-[0_8px_25px_rgba(79,70,229,0.18)]" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
               {tab}
@@ -444,7 +445,7 @@ export default function SuperAdminPage(): Element {
             value={search}
             onChange={(e: ChangeEvent<HTMLInputElement>): void => setSearch(e.target.value)}
             placeholder="Search by name or code..."
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 mt-2"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
           />
         )}
       </div>

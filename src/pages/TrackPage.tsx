@@ -242,7 +242,7 @@ export default function TrackPage(): Element {
           agar shopCode hai to shop wapas jaane ka link bhi hoga */}
       <CustomerHeader shopCode={shopCode} />
 
-      <div className="max-w-md mx-auto px-4 py-6">
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
 
         {/* ============================================================
             ORDER HEADER SECTION
@@ -251,23 +251,25 @@ export default function TrackPage(): Element {
             aur shop ke contact details (phone/address) dikhata hai.
         ============================================================ */}
 
-        <div className="mb-5 text-center">
+        <div className="mb-6 rounded-[28px] bg-gradient-to-r from-brand via-indigo-600 to-violet-600 p-5 text-white shadow-[0_18px_45px_rgba(79,70,229,0.25)]">
 
-          <h1 className="text-xl font-bold">
-            {t("track.orderNo", { id: ticket.id })}
-          </h1>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-100">
+                {t("track.orderNo", { id: ticket.id })}
+              </p>
+              <h1 className="mt-2 text-2xl font-bold leading-tight">
+                {ticket.customerName}
+              </h1>
+            </div>
+            <div className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
+              <StatusBadge status={ticket.status} />
+            </div>
+          </div>
 
-          <p className="text-gray-500 text-sm">
-            {ticket.customerName}
+          <p className="mt-3 text-sm text-indigo-100">
+            {shopName ? `${shopName}${shopCity ? ` · ${shopCity}` : ""}` : ""}
           </p>
-
-          {/* shopName only tab dikhao jab getFormConfig se aaya ho */}
-          {shopName && (
-            <p className="text-gray-400 text-xs mt-1">
-              {shopName}
-              {shopCity ? ` - ${shopCity}` : ""}
-            </p>
-          )}
 
           {/* ShopContact: phone aur address ka small UI block */}
           <div className="inline-block text-left">
@@ -282,12 +284,12 @@ export default function TrackPage(): Element {
             Admin ne apna payment QR (UPI etc.) upload kiya ho tabhi dikhta hai.
             Cancelled order mein payment ka koi matlab nahi, isliye wahan hide hai. */}
         {hasPaymentQr && ticket.status !== "CANCELLED" && (
-          <Card className="mb-4 text-center">
-            <p className="text-sm font-semibold mb-2">💳 {t("track.scanToPay")}</p>
+          <Card className="mb-4 border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/50 text-center">
+            <p className="mb-2 text-sm font-semibold text-slate-700">💳 {t("track.scanToPay")}</p>
             <img
               src={getPublicPaymentQrUrl(ticket.businessCode)}
               alt="Payment QR"
-              className="mx-auto w-48 h-48 object-contain rounded-xl border border-gray-100"
+              className="mx-auto h-48 w-48 rounded-2xl border border-indigo-100 bg-white object-contain p-2 shadow-sm"
             />
           </Card>
         )}
@@ -302,7 +304,7 @@ export default function TrackPage(): Element {
             (conditional rendering).
         ============================================================ */}
 
-        <Card className="mb-4 text-center">
+        <Card className="mb-4 border border-indigo-100 bg-gradient-to-b from-white to-indigo-50/40 text-center">
 
           {/* Status badge — colored pill showing current status
               (e.g. "In Progress", "Ready") */}
@@ -474,7 +476,7 @@ export default function TrackPage(): Element {
               Jab tak time available nahi hota tab tak "—" dikhta hai.
           ========================================================== */}
 
-          <div className="grid grid-cols-2 gap-3 mt-5 text-sm">
+          <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
             <TimeBox
               label={t("track.startTime")}
               value={ticket.startTime}
@@ -690,15 +692,15 @@ function TimeBox({
   value: string | null;
 }): Element {
   return (
-    <div className="bg-gray-50 rounded-xl py-3">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 py-3 shadow-sm">
 
-      <div className="text-xs text-gray-400">
+      <div className="px-3 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">
         {label}
       </div>
 
       {/* value null ho sakti hai agar ticket abhi us stage tak nahi
           pahucha */}
-      <div className="font-semibold">
+      <div className="mt-1 px-3 text-base font-semibold text-slate-700">
         {value ?? "—"}
       </div>
 

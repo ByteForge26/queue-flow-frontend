@@ -249,16 +249,14 @@ export default function OrderPage() {
       {/* Top navigation header — back button aur branding */}
       <CustomerHeader shopCode={shopCode} />
 
-      <div className="max-w-md mx-auto px-4 py-6">
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
 
         {/* ------------------------------------------------------------------ */}
         {/* SHOP INFO SECTION — Shop ka naam, city, aur contact details dikhata hai */}
         {/* ------------------------------------------------------------------ */}
-        <div className="mb-5">
-          {/* Industry type — e.g. "Restaurant", "Salon", etc. */}
-          <div className="text-xs text-gray-400 uppercase tracking-wide">{config.industryType}</div>
-          {/* Section/Business ka naam — bada heading */}
-          <h1 className="text-2xl font-bold">{config.businessName}</h1>
+        <div className="mb-6 rounded-[28px] bg-gradient-to-r from-brand via-indigo-600 to-violet-600 p-5 text-white shadow-[0_18px_45px_rgba(79,70,229,0.24)]">
+          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-100">{config.industryType}</div>
+          <h1 className="mt-2 text-3xl font-bold">{config.businessName}</h1>
           {/* Agar shopName alag hai (parent shop) to woh aur city dikhao */}
           {config.shopName && (
             <p className="text-gray-500 text-sm">
@@ -605,7 +603,7 @@ function ItemRow({
   onChange: (q: number) => void;
 }) {
   return (
-    <div className="flex items-center justify-between border border-gray-200 bg-white rounded-2xl px-3 py-3 shadow-sm transition hover:border-brand/40 hover:shadow-md">
+    <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/95 px-3 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_14px_30px_rgba(79,70,229,0.08)]">
       {/* Item ki left side info — naam, price, avg time, description */}
       <div className="min-w-0 pr-3">
         <div className="font-semibold text-gray-800 leading-tight">{item.name}</div>

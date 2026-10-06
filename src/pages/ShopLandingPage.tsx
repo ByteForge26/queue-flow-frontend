@@ -85,31 +85,34 @@ export default function ShopLandingPage() {
   // --- MAIN PAGE RENDER (shop data mil gaya) ---
   return (
     <>
-      {/* Page ke upar customer-facing header — back button, branding, etc. */}
       <CustomerHeader shopCode={shopCode} />
 
-      <div className="max-w-md mx-auto px-4 py-6">
-        {/* === SHOP INFO SECTION === */}
-        {/* Shop ka naam, location, contact info aur "pick a service" prompt dikhata hai */}
-        <div className="mb-5 text-center">
-          {/* Shop ka naam — bold aur bada dikhao */}
-          <h1 className="text-2xl font-bold">{shop.name}</h1>
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="premium-shell mx-auto max-w-3xl overflow-hidden p-5 sm:p-6">
+          <div className="mb-6 rounded-[26px] bg-gradient-to-r from-slate-900 via-indigo-900 to-brand p-5 text-white shadow-xl shadow-indigo-500/20">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-indigo-100">Marketplace</div>
+                <h1 className="mt-2 text-3xl font-black">{shop.name}</h1>
+              </div>
+              <div className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-100">
+                {shop.open ? "Open" : "Offline"}
+              </div>
+            </div>
 
-          {/* City aur pincode — dono mein se jo bhi available ho woh dikhao, dot se separate karke */}
-          {(shop.city || shop.pincode) && (
-            <p className="text-gray-500 text-sm">
-              {[shop.city, shop.pincode].filter(Boolean).join(" · ")}
-            </p>
-          )}
-
-          {/* Phone number aur address — ShopContact component handle karta hai */}
-          <div className="inline-block text-left">
-            <ShopContact phone={shop.phone} address={shop.address} />
+            {(shop.city || shop.pincode) && (
+              <p className="mt-3 text-sm text-indigo-100">
+                {[shop.city, shop.pincode].filter(Boolean).join(" · ")}
+              </p>
+            )}
           </div>
 
-          {/* Customer ko prompt karo ki koi service choose kare */}
-          <p className="text-gray-500 text-sm mt-2">{t("shop.pickService")}</p>
-        </div>
+          <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="text-left">
+              <ShopContact phone={shop.phone} address={shop.address} />
+            </div>
+            <p className="mt-3 text-sm text-slate-500">{t("shop.pickService")}</p>
+          </div>
 
         {/* === OPERATING HOURS BANNER === */}
         {/* Har waqt dikhta hai — green agar shop open hai, amber/red agar closed ya off-hours */}
@@ -150,72 +153,56 @@ export default function ShopLandingPage() {
           );
         })()}
 
-        {/* === SECTIONS LIST === */}
-        {/* Shop ke saare service sections (e.g. Haircut, Dine-In, OPD) cards ke roop mein */}
         <div className="space-y-3">
           {shop.sections.map((s: SectionDto) => {
-            // Section disabled hoga agar:
-            // 1. Shop offline hai (!shop.open), ya
-            // 2. Abhi business hours ke bahar hai (!shop.withinHours), ya
-            // 3. Ye specific section inactive hai (!s.active)
             const disabled: boolean = !shop.open || !shop.withinHours || !s.active;
 
             return (
-              // Har section ke liye ek Card — industry type ke hisaab se colored left border
               <Card
                 key={s.code}
-                className={`flex items-center justify-between transition-shadow ${SECTION_BORDER[s.industryType] ?? SECTION_BORDER.OTHER} ${
-                  disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow-md"
+                className={`flex items-center justify-between border-l-4 bg-gradient-to-r from-white to-slate-50 ${SECTION_BORDER[s.industryType] ?? SECTION_BORDER.OTHER} ${
+                  disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:-translate-y-0.5"
                 }`}
-                // Disabled section pe click block karo (undefined pass karne se onClick nahi chalega)
-                // Enabled section pe: order page pe navigate karo, shop code bhi query param mein bhejo
                 onClick={disabled ? undefined : () => navigate(`/order/${s.code}?shop=${shop.code}`)}
               >
-                {/* LEFT SIDE: Section icon + naam + industry type */}
                 <div className="flex items-center gap-3">
-                  {/* Industry type ke hisaab se emoji icon — fallback: "OTHER" ka icon */}
-                  <span className="text-2xl">{ICON[s.industryType] ?? ICON.OTHER}</span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-2xl shadow-inner">
+                    {ICON[s.industryType] ?? ICON.OTHER}
+                  </span>
                   <div>
-                    {/* Section ka display naam (e.g. "Haircut & Styling") */}
-                    <div className="font-semibold">{s.displayName}</div>
-                    {/* Industry type label (e.g. "SALON") — chhota gray text */}
-                    <div className="text-xs text-gray-400">{s.industryType}</div>
+                    <div className="font-semibold text-slate-900">{s.displayName}</div>
+                    <div className="text-xs uppercase tracking-[0.15em] text-slate-400">{s.industryType}</div>
                   </div>
                 </div>
 
-                {/* RIGHT SIDE: Disabled badge ya "Order ->" arrow */}
-                {disabled
-                  // Section unavailable hai toh gray badge dikhao
-                  ? <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{t("section.unavailable")}</span>
-                  // Available hai toh amber arrow dikhao — customer ko click karne ke liye encourage karo
-                  : <span className="text-amber-600 text-sm font-semibold">{t("shop.orderArrow")}</span>
-                }
+                {disabled ? (
+                  <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+                    {t("section.unavailable")}
+                  </span>
+                ) : (
+                  <span className="text-sm font-semibold text-brand">{t("shop.orderArrow")}</span>
+                )}
               </Card>
             );
           })}
         </div>
 
-        {/* === FOOTER ACTIONS === */}
-        {/* My Orders link aur Share button — page ke sabse neeche */}
-        <div className="mt-6 flex items-center justify-center gap-4">
-          {/* "My Orders" — customer apne is shop ke saare orders dekh sakta hai */}
-          <Link to={`/my-orders/${shop.code}`} className="text-sm text-brand hover:underline">
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <Link to={`/my-orders/${shop.code}`} className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-brand transition hover:border-indigo-300 hover:bg-indigo-100">
             {t("shop.myOrdersLink")}
           </Link>
 
-          {/* Share button — shop ka current URL share karo */}
           <button
             onClick={(): void => {
               const url: string = window.location.href;
-              // Agar browser Web Share API support karta hai (mobile pe mostly available hota hai)
-              // toh native share sheet kholo; warna clipboard mein URL copy karo
               if (navigator.share) { navigator.share({ title: shop.name, url }); }
               else { navigator.clipboard?.writeText(url); }
             }}
-            className="text-sm text-gray-500 hover:text-brand"
+            className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-brand"
           >
             {t("shop.shareLink")}
           </button>
+        </div>
         </div>
       </div>
     </>

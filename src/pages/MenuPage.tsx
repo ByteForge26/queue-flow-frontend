@@ -333,23 +333,21 @@ export default function MenuPage(): JSX.Element {
   if (loading) return <Spinner />;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
       {/* --- Page Header Block ---
           Admin dashboard ka back link + page title + subtitle dikhate hai.
           shopCode se admin dashboard ka URL banta hai wapas jaane ke liye.
       */}
-      <div className="mb-5">
-        <Link to={`/admin/${shopCode}`} className="text-sm text-brand hover:underline">
+      <div className="mb-6 rounded-[28px] bg-gradient-to-r from-brand via-indigo-600 to-violet-600 p-5 text-white shadow-[0_18px_45px_rgba(79,70,229,0.24)]">
+        <Link to={`/admin/${shopCode}`} className="text-sm font-medium text-indigo-100 hover:text-white">
           {t("common.backDashboard")}
         </Link>
 
-        {/* sectionCode title mein inject hota hai taaki admin ko pata chale
-            kaunse section ka menu hai */}
-        <h1 className="text-2xl font-bold mt-1">
+        <h1 className="mt-2 text-3xl font-bold">
           {t("menu.title", { section: sectionCode })}
         </h1>
 
-        <p className="text-gray-500 text-sm">{t("menu.subtitle")}</p>
+        <p className="mt-2 text-sm text-indigo-100">{t("menu.subtitle")}</p>
       </div>
 
       {/* --- Error Message Block ---
@@ -367,8 +365,8 @@ export default function MenuPage(): JSX.Element {
       <div className="flex gap-4 mb-5">
         {/* LEFT SIDEBAR: Service Sections List */}
         <div className="w-48 flex-shrink-0">
-          <Card className="bg-blue-50 border-2 border-blue-200">
-            <h3 className="font-bold text-lg mb-1 text-blue-900">📋 Services</h3>
+          <Card className="border border-indigo-100 bg-gradient-to-b from-indigo-50 to-white">
+            <h3 className="mb-1 text-lg font-bold text-indigo-900">📋 Services</h3>
 
             {/* planLimit null = PAID/unlimited plan, warna BASIC plan ka 5-section cap dikhao */}
             <p className="text-xs text-blue-600 mb-3">
@@ -479,8 +477,8 @@ export default function MenuPage(): JSX.Element {
               Name, price, estimated minutes, description aur category ke inputs hain.
               Sab valid ho tabhi Add button enable hoga.
           */}
-          <Card className="mb-5">
-            <h2 className="font-semibold mb-3">{t("menu.newItem")}</h2>
+          <Card className="mb-5 border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/50">
+            <h2 className="mb-3 text-lg font-semibold text-slate-800">{t("menu.newItem")}</h2>
 
             {/* Pehli row: naam (2 columns wide), price, estimated minutes */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
@@ -559,7 +557,7 @@ export default function MenuPage(): JSX.Element {
 
             {currentItems.map((it: MenuItemDto): JSX.Element => (
               // Inactive item ka card 60% opacity pe dikhta hai — visually "disabled" lagta hai
-              <Card key={it.id} className={it.active ? "" : "opacity-60"}>
+              <Card key={it.id} className={it.active ? "border border-slate-200/80 bg-white/90 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_12px_28px_rgba(79,70,229,0.08)]" : "border border-slate-200 bg-slate-50/70 opacity-60"}>
                 {/* Agar ye item currently edit mode mein hai (editId match karta hai) to edit form dikhao */}
                 {editId === it.id ? (
                   // --- Inline Edit Form ---
@@ -681,7 +679,7 @@ export default function MenuPage(): JSX.Element {
 
             {/* Agar is section mein koi item nahi hai to empty state message dikhao */}
             {currentItems.length === 0 && (
-              <Card className="text-center text-gray-400 py-6">{t("menu.empty")}</Card>
+              <Card className="border-dashed border-slate-200 bg-slate-50/80 py-6 text-center text-slate-400">{t("menu.empty")}</Card>
             )}
           </div>
         </div>

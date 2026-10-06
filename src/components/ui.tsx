@@ -42,24 +42,15 @@ export function Card({
   className = "",
   onClick,
 }: {
-  // children: Card ke andar render hone wala koi bhi React content
   children: ReactNode;
-  // className: Optional extra CSS classes — default empty string taaki
-  // template literal mein error na aaye jab className pass na ho
   className?: string;
-  // onClick: Optional click handler — agar diya to card ek clickable element
-  // ban jata hai (jaise ek selectable order card)
   onClick?: () => void;
 }) {
   return (
     <div
       onClick={onClick}
-      // Base styles: white background, rounded corners (rounded-2xl),
-      // halki shadow (shadow-sm), light border, aur internal padding (p-5).
-      // ${className} se parent ki extra classes merge ho jaati hain.
-      className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-5 ${className}`}
+      className={`rounded-[24px] border border-slate-200/80 bg-white/85 p-5 shadow-[0_10px_35px_rgba(15,23,42,0.06)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(79,70,229,0.1)] ${className}`}
     >
-      {/* children yahan render hoga — Card ke andar jo bhi content diya */}
       {children}
     </div>
   );
@@ -94,45 +85,32 @@ export function Button({
   disabled,
   variant = "primary",
   className = "",
+  type = "button",
 }: {
-  // children: Button label ya icon — jo user ko button par dikhega
   children: ReactNode;
-  // onClick: Button click hone par call hoga — optional kyunki kabhi kabhi
-  // button type="submit" hota hai aur form ko handle karna hota hai
   onClick?: () => void;
-  // disabled: Button ko inactive banana ke liye — loading state ya
-  // validation fail hone par use karo
   disabled?: boolean;
-  // variant: Button ka color theme — 4 predefined options hain.
-  // Default "primary" hai taaki har jagah explicitly nahi likhna pade.
   variant?: "primary" | "ghost" | "success" | "staff";
-  // className: Extra Tailwind classes — size ya margin adjust karne ke liye
   className?: string;
+  type?: "button" | "submit" | "reset";
 }) {
-  // styles: Har variant ke liye corresponding Tailwind CSS classes ka map.
-  // Record<string, string> matlab: keys strings hain, values bhi strings hain.
-  // Ye object ek lookup table ki tarah kaam karta hai — variant naam deke
-  // uski CSS class string milti hai.
   const styles: Record<string, string> = {
-    // primary: App ka main brand color — most important actions ke liye
-    primary: "bg-brand text-white hover:bg-brand-dark",
-    // ghost: Subtle gray button — secondary ya less important actions ke liye
-    ghost: "bg-gray-100 text-gray-700 hover:bg-gray-200",
-    // success: Green button — kuch complete ya confirm karne ke liye
-    success: "bg-emerald-600 text-white hover:bg-emerald-700",
-    // staff: Teal button — staff dashboard mein use hone wale actions ke liye
-    staff: "bg-teal-600 text-white hover:bg-teal-700",
+    primary:
+      "bg-gradient-to-r from-brand to-indigo-600 text-white shadow-[0_12px_30px_rgba(79,70,229,0.24)] hover:translate-y-[-1px] hover:shadow-[0_16px_34px_rgba(79,70,229,0.28)]",
+    ghost:
+      "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+    success:
+      "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-[0_12px_30px_rgba(16,185,129,0.22)] hover:translate-y-[-1px]",
+    staff:
+      "bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-[0_12px_30px_rgba(13,148,136,0.22)] hover:translate-y-[-1px]",
   };
 
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={disabled}
-      // Base styles sabke liye common hain: padding, rounded corners, font weight,
-      // smooth color transition, aur disabled state styles (opacity kam, pointer disabled).
-      // ${styles[variant]} se variant ke hisaab se sahi color class inject hoti hai.
-      // ${className} se parent ki custom classes merge ho jaati hain.
-      className={`px-4 py-2.5 rounded-xl font-medium transition disabled:opacity-40 disabled:cursor-not-allowed ${styles[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${styles[variant]} ${className}`}
     >
       {children}
     </button>

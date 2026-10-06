@@ -589,28 +589,29 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
       {/* Save success toast */}
       {shopDetailMsg && shopDetailMsg.includes("✓") && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-lg text-sm font-medium flex items-center gap-2">
+        <div className="fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-medium text-white shadow-lg">
           <span>{shopDetailMsg}</span>
-          <span className="text-emerald-200 text-xs">{t("admin.shopDetailsRelogin")}</span>
+          <span className="text-xs text-emerald-200">{t("admin.shopDetailsRelogin")}</span>
         </div>
       )}
 
       {/* Gradient header — always visible */}
-      <div className="bg-gradient-to-r from-indigo-50 to-violet-50 px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between">
+      <div className="rounded-[28px] bg-gradient-to-r from-brand via-indigo-600 to-violet-600 px-5 pb-4 pt-5 text-white shadow-[0_18px_45px_rgba(79,70,229,0.22)]">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">{overview?.shopName ?? shopCode}</h1>
-            <p className="text-gray-500 text-sm">{t("admin.adminRole")}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-100">Admin Workspace</p>
+            <h1 className="mt-2 text-3xl font-bold">{overview?.shopName ?? shopCode}</h1>
+            <p className="mt-1 text-sm text-indigo-100">{t("admin.adminRole")}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={refresh}>
+            <Button variant="ghost" onClick={refresh} className="border-white/20 bg-white/10 text-white hover:bg-white/15">
               {t("common.refresh")}
             </Button>
             {auth && (
-              <Button variant="ghost" onClick={logout}>
+              <Button variant="ghost" onClick={logout} className="border-white/20 bg-white/10 text-white hover:bg-white/15">
                 {t("common.logout")}
               </Button>
             )}
@@ -620,7 +621,7 @@ export default function AdminPage() {
       </div>
 
       {/* Tab content — padded bottom for sticky nav */}
-      <div className="pb-20 px-4 pt-4">
+      <div className="pb-20 pt-4">
 
         {/* ── OVERVIEW TAB ── */}
         {adminTab === "overview" && (
@@ -629,7 +630,7 @@ export default function AdminPage() {
               color="indigo" bullets={[t("admin.tabInfoOverview1"), t("admin.tabInfoOverview2"),
                 t("admin.tabInfoOverview3"), t("admin.tabInfoOverview4")]} />
             {/* Shop code + Live/Offline toggle + QR */}
-            <Card className="mb-4 border-t-4 border-t-indigo-400">
+            <Card className="mb-4 border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/60">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <div className="text-xs text-gray-400 uppercase tracking-wide">{t("admin.shopCode")}</div>
@@ -691,7 +692,7 @@ export default function AdminPage() {
             </Card>
 
             {/* Payment QR (UPI etc.) — sirf PAID plan mein aur jab superadmin ne feature ban nahi kiya ho */}
-            <div className="pt-3 border-t border-gray-100">
+            <div className="border-t border-slate-200 pt-3">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="text-sm font-medium">💳 Payment QR</p>
@@ -752,7 +753,7 @@ export default function AdminPage() {
 
             {/* BASIC upgrade CTA */}
             {shopDetail?.plan === "BASIC" && shopDetail?.tierSystemEnabled && (
-              <Card className="mb-4 border-t-4 border-t-amber-400 text-center py-4">
+              <Card className="mb-4 border border-amber-200 bg-gradient-to-br from-amber-50 to-white py-4 text-center">
                 <p className="text-sm font-semibold text-amber-700 mb-2">✨ {t("admin.upgradeToPaid")}</p>
                 <button onClick={() => setShowUpgradeModal(true)}
                   className="text-sm bg-gradient-to-r from-brand to-indigo-500

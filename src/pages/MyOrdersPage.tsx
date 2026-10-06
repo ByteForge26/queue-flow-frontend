@@ -92,23 +92,23 @@ export default function MyOrdersPage() {
       {/* Top navigation bar – shop branding aur back/home links */}
       <CustomerHeader shopCode={shopCode} />
 
-      <div className="max-w-md mx-auto px-4 py-6">
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
 
         {/* ---- Page heading section ---- */}
         {/* Title aur shop ka naam center mein dikhata hai */}
-        <div className="mb-5 text-center">
-          <h1 className="text-2xl font-bold">{t("myorders.title")}</h1>
-          {/* Shop ka naam sirf tab dikhao jab data aa jaaye (null check) */}
-          {shop && <p className="text-gray-500 text-sm">{shop.name}</p>}
+        <div className="mb-6 rounded-[28px] bg-gradient-to-r from-brand via-indigo-600 to-violet-600 p-5 text-white shadow-[0_18px_45px_rgba(79,70,229,0.24)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-100">QueueFlow</p>
+          <h1 className="mt-2 text-3xl font-bold">{t("myorders.title")}</h1>
+          {shop && <p className="mt-2 text-sm text-indigo-100">{shop.name}</p>}
         </div>
 
         {/* ---- Section 1: Is device pe saved orders ---- */}
         {/* Ye orders browser localStorage se aati hain – koi server call nahi */}
         {/* Fayda: customer bina phone number ke apni recent orders dekh sakta hai */}
-        <h2 className="font-semibold mb-2">{t("myorders.onDevice")}</h2>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{t("myorders.onDevice")}</h2>
         {localOrders.length === 0 ? (
           // Agar koi local order nahi hai to empty state message dikhao
-          <Card className="text-center text-gray-400 py-6 mb-6">
+          <Card className="mb-6 border-dashed border-slate-200 bg-slate-50/80 py-6 text-center text-slate-400">
             {t("myorders.noDevice")}
           </Card>
         ) : (
@@ -117,16 +117,14 @@ export default function MyOrdersPage() {
             {localOrders.map((o: LocalOrder) => (
               // Har order card ek link hai – click karne par live tracking page pe jaata hai
               <Link key={o.ticketId} to={`/track/${o.ticketId}`}>
-                <Card className="flex items-center justify-between py-3 cursor-pointer hover:shadow-md transition-shadow">
+                <Card className="flex cursor-pointer items-center justify-between border border-slate-200/80 bg-white/90 py-3 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_12px_28px_rgba(79,70,229,0.08)]">
                   <div>
-                    {/* Ticket number bold dikhao – primary identifier */}
-                    <div className="font-semibold">#{o.ticketId}</div>
-                    {/* Section/counter naam – jaise "Counter A" ya "Dine-In" */}
-                    <div className="text-xs text-gray-400">{o.sectionName}</div>
+                    <div className="text-sm font-semibold text-slate-800">#{o.ticketId}</div>
+                    <div className="mt-1 text-xs text-slate-500">{o.sectionName}</div>
                   </div>
-                  {/* Order place karne ka time – right side mein small text */}
-                  {/* Nullish coalescing: agar placedTime nahi hai to empty string */}
-                  <div className="text-xs text-gray-400">{o.placedTime ?? ""}</div>
+                  <div className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
+                    {o.placedTime ?? ""}
+                  </div>
                 </Card>
               </Link>
             ))}
@@ -135,8 +133,8 @@ export default function MyOrdersPage() {
 
         {/* ---- Section 2: Phone number se history search ---- */}
         {/* Customer kisi bhi device se apni history dekh sakta hai phone+naam se */}
-        <h2 className="font-semibold mb-2">{t("myorders.byPhone")}</h2>
-        <Card className="mb-4">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{t("myorders.byPhone")}</h2>
+        <Card className="mb-4 border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/40">
           <div className="space-y-2">
             {/* Phone number input – type="tel" mobile keyboard trigger karta hai */}
             <input
@@ -197,22 +195,19 @@ export default function MyOrdersPage() {
                 {history.orders.map((t: TicketDto) => (
                   // Har order card link hai – click karo to live tracking page
                   <Link key={t.id} to={`/track/${t.id}`}>
-                    <Card className="flex items-center justify-between py-3 cursor-pointer hover:shadow-md transition-shadow">
+                    <Card className="flex cursor-pointer items-center justify-between border border-slate-200/80 bg-white/90 py-3 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_12px_28px_rgba(79,70,229,0.08)]">
                       <div>
                         <div className="flex items-center gap-2">
-                          {/* Ticket number aur status badge side by side */}
-                          <span className="font-semibold">#{t.id}</span>
-                          {/* StatusBadge color-coded status dikhata hai: Pending, Ready, etc. */}
+                          <span className="font-semibold text-slate-800">#{t.id}</span>
                           <StatusBadge status={t.status} />
                         </div>
-                        {/* Order items summary: "Chai x2, Samosa x1" format mein */}
-                        {/* Agar items array empty ho to "–" fallback dikhao */}
-                        <div className="text-xs text-gray-400 mt-1">
+                        <div className="mt-1 text-xs text-slate-500">
                           {t.items.map((i: TicketItemDto): string => `${i.itemName} x${i.quantity}`).join(", ") || "–"}
                         </div>
                       </div>
-                      {/* Order place karne ka time – right side mein */}
-                      <div className="text-xs text-gray-400">{t.placedTime}</div>
+                      <div className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                        {t.placedTime}
+                      </div>
                     </Card>
                   </Link>
                 ))}
@@ -241,11 +236,9 @@ export default function MyOrdersPage() {
 //   value – number jo dikhana hai (e.g. 3, 12)
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <Card className="text-center py-3">
-      {/* Bada colored number – brand color mein highlight kiya */}
+    <Card className="border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/60 py-3 text-center shadow-sm">
       <div className="text-2xl font-bold text-brand">{value}</div>
-      {/* Chhota label text neeche */}
-      <div className="text-xs text-gray-400">{label}</div>
+      <div className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-slate-500">{label}</div>
     </Card>
   );
 }

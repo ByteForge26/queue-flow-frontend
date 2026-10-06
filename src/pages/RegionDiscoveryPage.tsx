@@ -182,20 +182,19 @@ export default function RegionDiscoveryPage() {
   // --- JSX / RENDER ---
   return (
     <>
-      {/* CustomerHeader: Page ka top navigation bar — logo, language switcher, etc. */}
       <CustomerHeader />
 
-      {/* Main container: max width 448px, centered, with horizontal padding aur vertical spacing */}
-      <div className="max-w-md mx-auto px-4 py-6">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="premium-shell mx-auto max-w-2xl overflow-hidden p-5 sm:p-7">
+          <div className="mb-6 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand">
+              Service locator
+            </div>
+            <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">{t("discovery.title")}</h1>
+            <p className="mt-2 text-sm text-slate-500">{t("discovery.subtitle")}</p>
+          </div>
 
-        {/* Page heading section: Title aur subtitle centered dikhata hai */}
-        <div className="mb-5 text-center">
-          <h1 className="text-2xl font-bold">{t("discovery.title")}</h1>
-          <p className="text-gray-500 text-sm">{t("discovery.subtitle")}</p>
-        </div>
-
-        {/* Form section: Teeno required inputs (country, city, pincode) aur ek optional input (shop code) */}
-        <div className="space-y-3 mb-5">
+          <div className="space-y-3 mb-5">
 
           {/* CountryTypeahead: Searchable country dropdown
               - value/onChange: controlled input
@@ -275,65 +274,56 @@ export default function RegionDiscoveryPage() {
           </div>
         </div>
 
-        {/* Search Button: Full width; geo.loading ke dauran disable rahega
-            taaki location detect hone se pehle user galti se submit na kare */}
-        <Button onClick={runSearch} disabled={geo.loading} className="w-full mb-5">
+        <Button onClick={runSearch} disabled={geo.loading} className="w-full mb-5 shadow-lg shadow-indigo-500/10">
           {t("discovery.searchBtn")}
         </Button>
 
-        {/* Results section: Teen possible states handle karta hai —
-            1. loadingShops true: Spinner dikhao (API call chal rahi hai)
-            2. Search hua lekin results empty: "No shops found" card dikhao
-            3. Results available: Scrollable shops list dikhao */}
         {loadingShops ? (
-          /* Loading state: Search chal rahi hai, spinner dikhao */
-          <Spinner />
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+            <Spinner />
+          </div>
         ) : searched && shops.length === 0 ? (
-          /* Empty state: Search ho chuka hai lekin koi shop nahi mili is area mein */
-          <Card className="text-center text-gray-400 py-8">{t("discovery.noShops")}</Card>
+          <Card className="py-8 text-center text-slate-500">{t("discovery.noShops")}</Card>
         ) : (
-          /* Shops list: max height set hai taaki page overflow na ho — inner scroll hoga
-             pr-1 se scrollbar ke neeche content clip na ho */
           <div className="space-y-3 overflow-y-auto pr-1 max-h-[calc(100vh-420px)]">
             {shops.map((s: ShopSummaryDto) => (
-              /* Shop Card: Har shop ek clickable card hai
-                 - key: s.code unique identifier hai React rendering ke liye
-                 - onClick: shop ke queue page pe navigate karo — /q/:shopCode */
               <Card
                 key={s.code}
-                className="cursor-pointer hover:shadow-md transition-shadow"
+                className="cursor-pointer border-l-4 border-l-indigo-300 bg-gradient-to-r from-white to-indigo-50/40"
                 onClick={() => navigate(`/q/${s.code}`)}
               >
-                {/* Card top row: Shop naam left mein, status badge + "Open" link right mein */}
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold">{s.name}</div>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-bold text-slate-900">{s.name}</div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      {s.sectionTypes.join(" · ")}
+                    </div>
+                  </div>
                   <div className="flex items-center gap-2">
-                    {/* Open/Offline badge: s.open true ho to green "Live" badge, warna red "Offline" badge
-                        Ye snapshot status hai — real-time nahi, search ke time ka status hai */}
-                    {s.open
-                      ? <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{t("shop.live")}</span>
-                      : <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">{t("shop.offline")}</span>}
-                    <span className="text-brand text-sm font-medium">{t("discovery.open")}</span>
+                    {s.open ? (
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                        {t("shop.live")}
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-red-600">
+                        {t("shop.offline")}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Card bottom row: Shop ke section types (e.g. "Haircut · Beard") aur location info
-                    - sectionTypes.join(" · "): array ko readable dot-separated string mein convert karta hai
-                    - State aur city dono hain to "State – City" format, warna jo available ho
-                    - Pincode agar available ho to append karo */}
-                <div className="text-xs text-gray-400 mt-1">
-                  {s.sectionTypes.join(" · ")}
-                  {(s.state || s.city) && (
-                    <span className="ml-2">
-                      · {s.state && s.city ? `${s.state} – ${s.city}` : s.state || s.city}
-                    </span>
-                  )}
-                  {s.pincode && <span className="ml-1">· {s.pincode}</span>}
+                <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
+                  <span>
+                    {(s.state || s.city) ? `${s.state || ""}${s.state && s.city ? " • " : ""}${s.city || ""}` : "Location available"}
+                    {s.pincode ? ` • ${s.pincode}` : ""}
+                  </span>
+                  <span className="font-semibold text-brand">{t("discovery.open")}</span>
                 </div>
               </Card>
             ))}
           </div>
         )}
+        </div>
       </div>
     </>
   );

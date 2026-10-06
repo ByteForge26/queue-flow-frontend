@@ -399,35 +399,28 @@ export default function FieldsPage(): JSX.Element {
   // ==========================================================
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
 
       {/* ------------------------------------------------------
           PAGE HEADER
       ------------------------------------------------------ */}
 
-      <div className="mb-5">
+      <div className="mb-6 rounded-[28px] bg-gradient-to-r from-brand via-indigo-600 to-violet-600 p-5 text-white shadow-[0_18px_45px_rgba(79,70,229,0.24)]">
 
-        {/* Dashboard par wapas jaane ka Link.
-            shopCode use karke correct URL banta hai. */}
         <Link
           to={`/admin/${shopCode}`}
-          className="text-sm text-brand hover:underline"
+          className="text-sm font-medium text-indigo-100 hover:text-white"
         >
           {t("common.backDashboard")}
         </Link>
 
-
-        {/* Main heading.
-            sectionCode title mein context ke liye dikhaya gaya hai. */}
-        <h1 className="text-2xl font-bold mt-1">
+        <h1 className="mt-2 text-3xl font-bold">
           {t("fields.title", {
             section: sectionCode,
           })}
         </h1>
 
-
-        {/* Subtitle */}
-        <p className="text-gray-500 text-sm">
+        <p className="mt-2 text-sm text-indigo-100">
           {t("fields.subtitle")}
         </p>
 
@@ -453,9 +446,9 @@ export default function FieldsPage(): JSX.Element {
           toh ye poora section hide ho jaata hai. */}
       {customFieldsEnabled && (
 
-        <Card className="mb-5">
+        <Card className="mb-5 border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/50">
 
-          <h2 className="font-semibold mb-3">
+          <h2 className="mb-3 text-lg font-semibold text-slate-800">
             {t("fields.newField")}
           </h2>
 
@@ -575,8 +568,8 @@ export default function FieldsPage(): JSX.Element {
                 key={f.id}
                 className={
                   f.active
-                    ? ""
-                    : "opacity-60"
+                    ? "border border-slate-200/80 bg-white/90 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_12px_28px_rgba(79,70,229,0.08)]"
+                    : "border border-slate-200 bg-slate-50/70 opacity-60"
                 }
               >
 

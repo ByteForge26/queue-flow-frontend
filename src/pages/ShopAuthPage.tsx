@@ -269,68 +269,67 @@ export default function ShopAuthPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto px-4 py-10">
-      {/* ------------------------------------------------------------- */}
-      {/* TOP BAR: Language toggle — page ke top-right mein language switch */}
-      {/* ------------------------------------------------------------- */}
-      <div className="flex justify-end mb-2">
-        <LanguageToggle />
-      </div>
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-xl">
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-indigo-600 text-lg font-bold text-white shadow-lg shadow-indigo-500/30">
+              QF
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">QueueFlow</div>
+              <div className="font-semibold text-slate-900">{t("auth.title")}</div>
+            </div>
+          </div>
+          <LanguageToggle />
+        </div>
 
-      {/* ------------------------------------------------------------- */}
-      {/* PAGE HEADING: App ka naam aur subtitle */}
-      {/* ------------------------------------------------------------- */}
-      <h1 className="text-2xl font-bold text-center mb-1">{t("auth.title")}</h1>
-      <p className="text-gray-500 text-sm text-center mb-5">{t("auth.subtitle")}</p>
+        <div className="premium-shell p-4 sm:p-5">
+          <div className="mb-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-900 to-brand p-4 text-white shadow-xl shadow-indigo-500/20">
+            <div className="text-xs uppercase tracking-[0.2em] text-indigo-100">Business access</div>
+            <h1 className="mt-2 text-2xl font-black">{t("auth.title")}</h1>
+            <p className="mt-1 text-sm text-indigo-100">{t("auth.subtitle")}</p>
+          </div>
 
-      {/* ------------------------------------------------------------- */}
-      {/* OWNER / STAFF TABS: Pill-style tab bar jisme Owner ya Staff choose */}
-      {/* kiya ja sake. Tab switch karne waqt error aur field errors clear */}
-      {/* hote hain taaki stale messages na dikhe. */}
-      {/* ------------------------------------------------------------- */}
-      <div className="flex rounded-xl bg-gray-100 p-1 mb-4">
-        {(["owner", "staff"] as Tab[]).map((tb: Tab) => (
-          <button
-            key={tb}
-            onClick={(): void => { setTab(tb); setError(null); setFieldErrors({}); }}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium ${
-              tab === tb ? "bg-white shadow-sm text-brand" : "text-gray-500"
-            }`}
-          >
-            {tb === "owner" ? t("auth.ownerTab") : t("auth.staffTab")}
-          </button>
-        ))}
-      </div>
+          <div className="mb-4 flex rounded-2xl bg-slate-100 p-1">
+            {(["owner", "staff"] as Tab[]).map((tb: Tab) => (
+              <button
+                key={tb}
+                onClick={(): void => { setTab(tb); setError(null); setFieldErrors({}); }}
+                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
+                  tab === tb ? "bg-white text-brand shadow-sm" : "text-slate-500"
+                }`}
+              >
+                {tb === "owner" ? t("auth.ownerTab") : t("auth.staffTab")}
+              </button>
+            ))}
+          </div>
 
       {/* ------------------------------------------------------------- */}
       {/* SIGN IN / SIGN UP TOGGLE: Sirf Owner tab ke liye dikhta hai. */}
       {/* Staff ke liye signup nahi hota, isliye ye toggle staff tab pe */}
       {/* hide hota hai. */}
       {/* ------------------------------------------------------------- */}
-      {tab === "owner" && (
-        <div className="flex gap-4 justify-center mb-4 text-sm">
-          {(["signin", "signup"] as Mode[]).map((m: Mode) => (
-            <button
-              key={m}
-              onClick={(): void => { setMode(m); setError(null); setFieldErrors({}); }}
-              className={effectiveMode === m ? "text-brand font-semibold underline" : "text-gray-400"}
-            >
-              {m === "signin" ? t("auth.signin") : t("auth.signup")}
-            </button>
-          ))}
-        </div>
-      )}
+          {tab === "owner" && (
+            <div className="mb-4 flex justify-center gap-4 text-sm">
+              {(["signin", "signup"] as Mode[]).map((m: Mode) => (
+                <button
+                  key={m}
+                  onClick={(): void => { setMode(m); setError(null); setFieldErrors({}); }}
+                  className={effectiveMode === m ? "font-semibold text-brand" : "text-slate-400"}
+                >
+                  {m === "signin" ? t("auth.signin") : t("auth.signup")}
+                </button>
+              ))}
+            </div>
+          )}
 
-      {/* Staff tab pe ek informational note dikhao ki staff sirf login kar sakta hai */}
-      {tab === "staff" && (
-        <p className="text-xs text-gray-400 text-center mb-4">{t("auth.staffLoginOnly")}</p>
-      )}
+          {tab === "staff" && (
+            <p className="mb-4 text-center text-xs text-slate-400">{t("auth.staffLoginOnly")}</p>
+          )}
 
-      {/* ------------------------------------------------------------- */}
-      {/* MAIN FORM CARD: Sab input fields is card ke andar hain */}
-      {/* ------------------------------------------------------------- */}
-      <Card>
-        <div className="space-y-3">
+          <Card className="border-slate-200/80 bg-slate-50/60 p-4 shadow-none">
+            <div className="space-y-3">
 
           {/* ------------------------------------------------------------- */}
           {/* OWNER SIGNUP FIELDS: Ye fields sirf tab dikhti hain jab */}
@@ -648,6 +647,8 @@ export default function ShopAuthPage() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -693,8 +694,8 @@ function Field({
         type={type}
         value={value}
         onChange={(e: ChangeEvent<HTMLInputElement>): void => onChange(e.target.value)}
-        className={`w-full border rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/40 ${
-          error ? "border-red-400" : "border-gray-200"
+        className={`w-full rounded-2xl border bg-white/90 px-3 py-2.5 text-sm text-slate-700 shadow-[0_8px_20px_rgba(15,23,42,0.04)] transition focus:border-indigo-300 focus:outline-none focus:ring-4 focus:ring-indigo-100 ${
+          error ? "border-red-300 bg-red-50/60" : "border-slate-200"
         }`}
       />
       {/* Inline error message neeche dikhata hai */}
@@ -726,11 +727,10 @@ function CheckChip({
     <button
       type="button"
       onClick={onClick}
-      className={`py-2 px-3 rounded-xl text-sm border capitalize ${
-        // Selected => brand background + white text; Unselected => white background + gray text
+      className={`rounded-2xl border px-3 py-2 text-sm capitalize transition ${
         checked
-          ? "bg-brand text-white border-brand"
-          : "bg-white text-gray-600 border-gray-200"
+          ? "border-brand bg-gradient-to-r from-brand to-indigo-600 text-white shadow-[0_12px_28px_rgba(79,70,229,0.18)]"
+          : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-brand"
       }`}
     >
       {/* label.toLowerCase() — "SALON" ko "salon" karke display karo (CSS capitalize ke saath "Salon" banega) */}

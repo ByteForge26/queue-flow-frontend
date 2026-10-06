@@ -353,13 +353,13 @@ export default function StaffPage(): Element {
   // ---------------------------------------------------------------------
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
       {/* ------------------------------------------------------------- */}
       {/* HEADER SECTION — gradient banner with title, section switcher, nav buttons */}
       {/* Teal gradient background; left side: pulsing dot + section name + shop name */}
       {/* Right side: section dropdown (agar multiple), admin link, refresh, logout, language */}
       {/* ------------------------------------------------------------- */}
-      <div className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-2xl p-4 mb-4">
+      <div className="mb-4 rounded-[28px] bg-gradient-to-r from-slate-900 via-teal-700 to-cyan-600 p-4 text-white shadow-[0_20px_45px_rgba(13,148,136,0.18)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {/* Live indicator — animated pulsing dot bata raha hai page real-time connected hai */}
@@ -826,11 +826,9 @@ function Stat({
   textClass?: string;
 }): Element {
   return (
-    <Card className={`text-center py-3 ${bgClass}`}>
-      {/* Bada bold number — colored as per textClass */}
+    <Card className={`border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/80 py-3 text-center shadow-sm ${bgClass}`}>
       <div className={`text-2xl font-bold ${textClass}`}>{value}</div>
-      {/* Chota label neeche */}
-      <div className="text-xs text-gray-400">{label}</div>
+      <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</div>
     </Card>
   );
 }
