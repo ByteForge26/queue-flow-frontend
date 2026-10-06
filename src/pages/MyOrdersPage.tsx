@@ -114,20 +114,27 @@ export default function MyOrdersPage() {
         ) : (
           // Scrollable list of local orders – max height fix hai taaki page overflow na ho
           <div className="space-y-2 mb-6 overflow-y-auto pr-1 max-h-[40vh]">
-            {localOrders.map((o: LocalOrder) => (
-              // Har order card ek link hai – click karne par live tracking page pe jaata hai
-              <Link key={o.ticketId} to={`/track/${o.ticketId}`}>
-                <Card className="flex cursor-pointer items-center justify-between border border-slate-200/80 bg-white/90 py-3 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_12px_28px_rgba(79,70,229,0.08)]">
+            {localOrders.map((o: LocalOrder) => {
+              const card = (
+                <Card className={`flex items-center justify-between border border-slate-200/80 bg-white/90 py-3 ${
+                  o.trackingToken ? "cursor-pointer transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_12px_28px_rgba(79,70,229,0.08)]" : ""
+                }`}>
                   <div>
                     <div className="text-sm font-semibold text-slate-800">#{o.ticketId}</div>
                     <div className="mt-1 text-xs text-slate-500">{o.sectionName}</div>
+                    {!o.trackingToken && (
+                      <div className="mt-1 text-xs text-slate-400">{t("myorders.trackingUnavailable")}</div>
+                    )}
                   </div>
                   <div className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
                     {o.placedTime ?? ""}
                   </div>
                 </Card>
-              </Link>
-            ))}
+              );
+              return o.trackingToken
+                ? <Link key={o.ticketId} to={`/track/${o.trackingToken}`}>{card}</Link>
+                : <div key={o.ticketId}>{card}</div>;
+            })}
           </div>
         )}
 
@@ -194,7 +201,7 @@ export default function MyOrdersPage() {
                     loop ke andar t() translation function kaam nahi karega */}
                 {history.orders.map((t: TicketDto) => (
                   // Har order card link hai – click karo to live tracking page
-                  <Link key={t.id} to={`/track/${t.id}`}>
+                  <Link key={t.id} to={`/track/${t.trackingToken}`}>
                     <Card className="flex cursor-pointer items-center justify-between border border-slate-200/80 bg-white/90 py-3 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_12px_28px_rgba(79,70,229,0.08)]">
                       <div>
                         <div className="flex items-center gap-2">

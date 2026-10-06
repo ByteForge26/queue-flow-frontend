@@ -190,6 +190,7 @@ export interface TicketDto {
   paymentPendingReason: string | null; // Agar payment pending hai toh kyun
   extraFields: FieldValueDto[]; // Customer ne jo custom fields fill kiye (key-value pairs)
   items: TicketItemDto[]; // Is ticket mein kaun se items/services hain
+  trackingToken: string; // Signed customer tracking key
 }
 
 // DashboardStatsDto: Staff/admin dashboard ka quick summary.
@@ -448,6 +449,7 @@ export interface StaffUserDto {
 // taaki wapas aane par (bina phone/login ke) apne recent orders dekh sake.
 export interface LocalOrder {
   ticketId: number;
+  trackingToken?: string;
   sectionName: string;
   placedTime: string | null;
 }

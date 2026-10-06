@@ -212,6 +212,7 @@ export default function OrderPage() {
       if (shopCode && config) {
         pushLocalOrder({
           ticketId: ticket.id,
+          trackingToken: ticket.trackingToken,
           shopCode,
           sectionCode,
           sectionName: config.businessName,
@@ -220,7 +221,7 @@ export default function OrderPage() {
       }
 
       // Success! Ticket tracking page pe redirect karo
-      navigate(`/track/${ticket.id}`);
+      navigate(`/track/${ticket.trackingToken}`);
     } catch (e: unknown) {
       // Server se aaye HTTP status code aur error message nikalo
       const status: number | undefined = (e as { response?: { status?: number; data?: { error?: string; message?: string } } })?.response?.status;

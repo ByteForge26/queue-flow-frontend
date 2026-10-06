@@ -378,17 +378,25 @@ export async function createTicket(
 
 // Ticket ID se ek specific ticket ki current status fetch karo
 // Customer "Track my ticket" page pe yahi use karta hai
-export async function getTicket(id: number): Promise<TicketDto> {
-  const { data } = await api.get(`/public/tickets/${id}`);
+export async function getTicket(trackingToken: string): Promise<TicketDto> {
+  const { data } = await api.get(`/public/tickets/${encodeURIComponent(trackingToken)}`);
   return data;
 }
 
 // Customer apna ticket cancel kar sakta hai (queue se hata sakta hai)
-export async function cancelTicket(id: number): Promise<TicketDto> {
-  const { data } = await api.post(`/public/tickets/${id}/cancel`);
+export async function cancelTicket(trackingToken: string): Promise<TicketDto> {
+  const { data } = await api.post(`/public/tickets/${encodeURIComponent(trackingToken)}/cancel`);
   return data; // cancelled ticket ki updated info wapas milti hai
 }
 
+export async function getQueueProgress(
+  trackingToken: string
+): Promise<{ currentlyProcessing: number[] }> {
+  const { data } = await api.get(
+    `/public/tickets/${encodeURIComponent(trackingToken)}/queue-progress`
+  );
+  return data;
+}
 // ============================================================================
 // AUTH FUNCTIONS (Login / Signup)
 // ============================================================================

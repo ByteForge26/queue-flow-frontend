@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { ReactElement as Element } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useT } from "../i18n/LanguageContext";
-import { getTicket, getFormConfig, cancelTicket,getPublicPaymentQrUrl } from "../lib/api";
+import { getTicket, getFormConfig, cancelTicket, getQueueProgress, getPublicPaymentQrUrl } from "../lib/api";
 import { getLocalOrders } from "../lib/auth";
 import { useStomp } from "../hooks/useStomp";
 import { Card, StatusBadge, Button, Spinner } from "../components/ui";
@@ -54,9 +54,7 @@ export default function TrackPage(): Element {
   // Hooks violation -> "change in order of Hooks" error).
   const t: (key: string, vars?: Record<string, string | number>) => string = useT();
 
-  // ticketId string ko number mein convert karo
-  // (API numeric ID expect karta hai)
-  const id: number = Number(ticketId);
+  const trackingToken = ticketId;
 
   // ticket state — is ticket ka poora data
   // (status, items, times, etc.)
@@ -65,6 +63,9 @@ export default function TrackPage(): Element {
   const [alertsEnabled, setAlertsEnabled] = useState<boolean>(false);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [alertError, setAlertError] = useState<string | null>(null);
+  const [queueProgress, setQueueProgress] = useState<number[] | null>(null);
+  const [queueProgressToken, setQueueProgressToken] = useState<string | null>(null);
+  const [queueProgressErrorFor, setQueueProgressErrorFor] = useState<string | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect((): (() => void) => {
@@ -103,7 +104,7 @@ export default function TrackPage(): Element {
 
   // notFound — agar ticket ID se nahi mila
   // (404 ya error) to "Not Found" message dikhate hain
-  const [notFound, setNotFound] = useState(false);
+  const [notFoundToken, setNotFoundToken] = useState<string | null>(null);
 
   // load function — API se ticket data fetch karta hai
   //
@@ -113,10 +114,10 @@ export default function TrackPage(): Element {
   // Success par ticket state set karta hai;
   // failure par notFound true karta hai.
   const load = useCallback((): void => {
-    getTicket(id)
+    getTicket(trackingToken)
       .then(setTicket)
-      .catch((): void => setNotFound(true));
-  }, [id]);
+      .catch((): void => setNotFoundToken(trackingToken));
+  }, [trackingToken]);
 
   // Ye effect tab chalta hai jab component pehli baar mount ho
   // ya load function change ho.
@@ -124,6 +125,23 @@ export default function TrackPage(): Element {
   useEffect((): void => {
     load();
   }, [load]);
+
+  const loadQueueProgress = useCallback((): void => {
+    if (!trackingToken) return;
+    getQueueProgress(trackingToken)
+      .then((progress): void => {
+        setQueueProgress(progress.currentlyProcessing);
+        setQueueProgressToken(trackingToken);
+        setQueueProgressErrorFor(null);
+      })
+      .catch((): void => setQueueProgressErrorFor(trackingToken));
+  }, [trackingToken]);
+
+  useEffect((): void => {
+    if (ticket?.status === "PLACED") {
+      loadQueueProgress();
+    }
+  }, [ticket?.status, loadQueueProgress]);
 
   // ================================================================
   // Business ka actual status flow le aao taaki stepper sahi steps
@@ -169,7 +187,7 @@ export default function TrackPage(): Element {
   // real-time tracking milti hai.
   // ================================================================
 
-  useStomp(`/topic/tickets/${id}`, (body: any): void => {
+  useStomp(`/topic/tickets/${trackingToken}`, (body: { ticket?: TicketDto }): void => {
     if (!body?.ticket) return;
 
     const updatedTicket = body.ticket as TicketDto;
@@ -204,6 +222,12 @@ export default function TrackPage(): Element {
     }
 
     setTicket(updatedTicket);
+  });
+
+  useStomp(`/topic/business/${ticket?.businessCode ?? "unloaded"}/queue`, (body: { event?: string }): void => {
+    if (body?.event === "QUEUE_UPDATED" && ticket?.status === "PLACED") {
+      loadQueueProgress();
+    }
   });
 
   useEffect((): (() => void) | undefined => {
@@ -250,7 +274,7 @@ export default function TrackPage(): Element {
     if (!ticket) return;
 
     try {
-      const updated: TicketDto = await cancelTicket(ticket.id);
+      const updated: TicketDto = await cancelTicket(trackingToken);
       setTicket(updated);
     } catch {
       // pick ho chuka hoga — reload se sahi state aayegi
@@ -260,7 +284,7 @@ export default function TrackPage(): Element {
 
   // Agar ticket nahi mila (404/error) to sirf header aur
   // "Not Found" message dikhao
-  if (notFound) {
+  if (notFoundToken === trackingToken) {
     return (
       <>
         <CustomerHeader />
@@ -270,7 +294,7 @@ export default function TrackPage(): Element {
   }
 
   // Agar ticket abhi load ho raha hai (null) to spinner dikhao
-  if (!ticket) {
+  if (!ticket || ticket.trackingToken !== trackingToken) {
     return (
       <>
         <CustomerHeader />
@@ -292,6 +316,9 @@ export default function TrackPage(): Element {
   const isStarted: boolean = ticket.status === "IN_PROGRESS";
   const isPlaced: boolean = ticket.status === "PLACED";
   const isAccepted: boolean = ticket.status === "ACCEPTED";
+  const visibleQueueProgress: number[] | null =
+    queueProgressToken === trackingToken ? queueProgress : null;
+  const hasQueueProgressError: boolean = queueProgressErrorFor === trackingToken;
 
   // ================================================================
   // Wapas jaane ke liye shop
@@ -576,6 +603,31 @@ export default function TrackPage(): Element {
               <div className="text-4xl font-bold text-brand mt-1">
                 {ticket.queuePosition || "-"}
               </div>
+
+              {isPlaced && ticket.queuePosition > 0 && (
+                <div className="mt-4 rounded-xl border border-indigo-100 bg-white/80 px-4 py-3 text-left">
+                  <p className="text-sm font-semibold text-slate-800">{t("track.processingAheadTitle")}</p>
+                  {hasQueueProgressError ? (
+                    <button
+                      type="button"
+                      onClick={loadQueueProgress}
+                      className="mt-1 text-sm font-medium text-brand hover:underline"
+                    >
+                      {t("track.processingAheadRetry")}
+                    </button>
+                  ) : visibleQueueProgress === null ? (
+                    <p className="mt-1 text-sm text-slate-500">{t("common.loading")}</p>
+                  ) : visibleQueueProgress.length > 0 ? (
+                    <p className="mt-1 text-sm text-slate-600">
+                      {t("track.processingAheadOrders", {
+                        numbers: visibleQueueProgress.map((number: number): string => `#${number}`).join(", "),
+                      })}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-slate-600">{t("track.noProcessingAhead")}</p>
+                  )}
+                </div>
+              )}
 
               {/* ACCEPTED state mein ek extra note dikhao customer ko */}
               {isAccepted && (

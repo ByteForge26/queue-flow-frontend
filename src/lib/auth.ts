@@ -53,6 +53,7 @@ const ORDERS_KEY = "qf.orders";
 // (Staff/Admin ke liye nahi - woh backend pe tracked hote hain)
 export interface LocalOrder {
   ticketId: number;       // unique ticket number jo backend ne assign kiya
+  trackingToken?: string; // Private tracking key (older saved orders may not have one)
   shopCode: string;       // kis shop ka order hai - filtering ke liye
   sectionCode: string;    // kis section/counter pe - e.g. "BILLING"
   sectionName: string;    // section ka human-readable naam - UI display ke liye

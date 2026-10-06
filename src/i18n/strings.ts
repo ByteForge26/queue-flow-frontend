@@ -158,6 +158,10 @@ const en: Dict = {
   "track.scheduledFor": "Scheduled for {time}",
   "track.queueNumber": "Your number in queue",
   "track.acceptedNote": "Picked up – work will start soon",
+  "track.processingAheadTitle": "Orders being processed ahead of you",
+  "track.processingAheadOrders": "Queue numbers currently picked: {numbers}",
+  "track.noProcessingAhead": "No earlier order has been picked yet.",
+  "track.processingAheadRetry": "Couldn't load queue progress. Tap to retry.",
   "track.startTime": "Start time",
   "track.readyTime": "Ready time",
   "track.cancelBtn": "Cancel order",
@@ -530,6 +534,7 @@ const en: Dict = {
   "myorders.today": "Today",
   "myorders.month": "This month",
   "myorders.newOrder": "← Place a new order",
+  "myorders.trackingUnavailable": "This older order's private tracking link is unavailable.",
 };
 
 const hi: Dict = {
@@ -685,6 +690,10 @@ const hi: Dict = {
   "track.scheduledFor": "Scheduled for {time}",
   "track.queueNumber": "Queue mein aapka number",
   "track.acceptedNote": "Pick ho gaya – jald hi banna shuru hoga",
+  "track.processingAheadTitle": "Aapse pehle wale process ho rahe orders",
+  "track.processingAheadOrders": "Abhi pick hue queue number: {numbers}",
+  "track.noProcessingAhead": "Abhi aapse pehle koi order pick nahi hua.",
+  "track.processingAheadRetry": "Queue progress load nahi hui. Dobara try karein.",
   "track.startTime": "Start time",
   "track.readyTime": "Ready time",
   "track.cancelBtn": "Order cancel karo",
@@ -1056,6 +1065,7 @@ const hi: Dict = {
   "myorders.today": "Aaj",
   "myorders.month": "Is mahine",
   "myorders.newOrder": "← Naya order karo",
+  "myorders.trackingUnavailable": "Is purane order ka private tracking link available nahi hai.",
 };
 
 export const STRINGS: Record<Lang, Dict> = { en, hi };
