@@ -886,7 +886,7 @@ const hi: Dict = {
   "admin.closeTime": "Bandh hone ka time",
   "admin.operatingDays": "Khule rehne ke din",
   "admin.operatingDaysHint": "1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat 7=Sun (comma se alag)",
-  "admin.exportCsv": "Orders export karo (Excel)",
+  "admin.exportExcel": "Orders export karo (Excel)",
   "admin.staffAnalytics": "Staff Performance",
   "admin.staffCompleted": "Is mahine complete kiye",
   "admin.staffAvgTime": "Average handling time",

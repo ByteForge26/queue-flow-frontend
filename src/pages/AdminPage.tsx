@@ -1193,7 +1193,7 @@ export default function AdminPage() {
                   <Card className="mb-4 border-t-4 border-t-violet-400">
                     <div className="flex gap-2">
                       <Button variant="ghost" onClick={handleExportExcel} className="flex-1 text-sm">
-                        {t("admin.exportCsv")}
+                        {t("admin.exportExcel")}
                       </Button>
                       <Button variant="ghost" onClick={loadStaffAnalytics} className="flex-1 text-sm">
                         {t("admin.staffAnalytics")}
