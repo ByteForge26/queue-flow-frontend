@@ -3,10 +3,11 @@
 // ================================================================
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { ReactElement as Element } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, Navigate } from "react-router-dom";
 import { useT } from "../i18n/LanguageContext";
 import { getTicket, getFormConfig, cancelTicket, getQueueProgress, getPublicPaymentQrUrl } from "../lib/api";
 import { getLocalOrders } from "../lib/auth";
+import type { LocalOrder } from "../lib/auth";
 import { useStomp } from "../hooks/useStomp";
 import { Card, StatusBadge, Button, Spinner } from "../components/ui";
 import CustomerHeader from "../components/CustomerHeader";
@@ -16,7 +17,6 @@ import type {
   TicketItemDto,
   FieldValueDto,
   FormConfigDto,
-  LocalOrder,
 } from "../lib/types";
 
 // ================================================================
@@ -55,11 +55,23 @@ export default function TrackPage(): Element {
   const t: (key: string, vars?: Record<string, string | number>) => string = useT();
 
   const trackingToken = ticketId;
+  const localOrders: LocalOrder[] = getLocalOrders();
+  const matchingLocalOrder: LocalOrder | undefined = localOrders.find(
+    (order: LocalOrder): boolean => order.trackingToken === trackingToken
+  );
+  const legacyLocalOrder: LocalOrder | undefined =
+    /^\d+$/.test(trackingToken)
+      ? localOrders.find((order: LocalOrder): boolean => order.ticketId === Number(trackingToken))
+      : undefined;
 
   // ticket state — is ticket ka poora data
   // (status, items, times, etc.)
   // Shuru mein null hai jab tak API se data nahi aata
   const [ticket, setTicket] = useState<TicketDto | null>(null);
+  const shopCode: string | undefined =
+    matchingLocalOrder?.shopCode ??
+    legacyLocalOrder?.shopCode ??
+    localOrders.find((order: LocalOrder): boolean => order.ticketId === ticket?.id)?.shopCode;
   const [alertsEnabled, setAlertsEnabled] = useState<boolean>(false);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [alertError, setAlertError] = useState<string | null>(null);
@@ -117,7 +129,7 @@ export default function TrackPage(): Element {
     getTicket(trackingToken)
       .then(setTicket)
       .catch((): void => setNotFoundToken(trackingToken));
-  }, [trackingToken]);
+  }, [trackingToken, setTicket]);
 
   // Ye effect tab chalta hai jab component pehli baar mount ho
   // ya load function change ho.
@@ -282,12 +294,16 @@ export default function TrackPage(): Element {
     }
   }
 
+  if (legacyLocalOrder?.trackingToken) {
+    return <Navigate to={`/track/${legacyLocalOrder.trackingToken}`} replace />;
+  }
+
   // Agar ticket nahi mila (404/error) to sirf header aur
   // "Not Found" message dikhao
   if (notFoundToken === trackingToken) {
     return (
       <>
-        <CustomerHeader />
+        <CustomerHeader shopCode={shopCode} />
         <Centered text={t("track.notFound")} />
       </>
     );
@@ -297,7 +313,7 @@ export default function TrackPage(): Element {
   if (!ticket || ticket.trackingToken !== trackingToken) {
     return (
       <>
-        <CustomerHeader />
+        <CustomerHeader shopCode={shopCode} />
         <Spinner />
       </>
     );
@@ -319,21 +335,6 @@ export default function TrackPage(): Element {
   const visibleQueueProgress: number[] | null =
     queueProgressToken === trackingToken ? queueProgress : null;
   const hasQueueProgressError: boolean = queueProgressErrorFor === trackingToken;
-
-  // ================================================================
-  // Wapas jaane ke liye shop
-  //
-  // getLocalOrders() browser ke localStorage mein stored orders dekhta hai.
-  //
-  // Agar is ticket ka shopCode wahan mila to
-  // "Back" link /q/<shopCode> par jayega.
-  //
-  // Warna generic /customer page par jayega.
-  // ================================================================
-
-  const shopCode: string | undefined = getLocalOrders().find(
-    (o: LocalOrder): boolean => o.ticketId === ticket.id
-  )?.shopCode;
 
   return (
     <>
