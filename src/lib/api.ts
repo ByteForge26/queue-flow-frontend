@@ -653,6 +653,15 @@ export async function addSection(
   return data; // updated overview milti hai naye section ke saath
 }
 
+// General service ka display naam customize karo; industryType aur sectionCode stable rehte hain.
+export async function updateSectionDisplayName(
+  sectionCode: string,
+  displayName: string
+): Promise<import("./types").AdminOverviewDto> {
+  const { data } = await api.patch(`/admin/sections/${sectionCode}/display-name`, { displayName });
+  return data;
+}
+
 // Section ko active ya inactive karo (band karo bina delete kiye)
 // value=false karne pe staff us section mein naye tickets nahi le sakti
 export async function setSectionActive(

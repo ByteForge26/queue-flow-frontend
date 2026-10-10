@@ -24,6 +24,7 @@ import {
   selectBasicServices,
   setShopOpen as apiSetShopOpen,
   setSectionActive,
+  updateSectionDisplayName,
   updateShopDetails,
   uploadPaymentQr,
 } from "../lib/api";
@@ -64,6 +65,10 @@ export default function AdminPage() {
   const [deleteTarget, setDeleteTarget] = useState<SectionStatsDto | null>(null);
   const [removeTarget, setRemoveTarget] = useState<SectionStatsDto | null>(null);
   const [disableBlocked, setDisableBlocked] = useState<{ name: string; liveCount: number } | null>(null);
+  const [renameTarget, setRenameTarget] = useState<SectionStatsDto | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [renameMsg, setRenameMsg] = useState<string | null>(null);
+  const [renameSaving, setRenameSaving] = useState(false);
 
   // shop live/offline
   const [shopOpen, setShopOpen] = useState(true);
@@ -367,6 +372,10 @@ export default function AdminPage() {
       const o = await addSection(newType);
       setOverview(o);
       setNewType("");
+      if (newType === "GENERAL") {
+        const addedGeneral = o.sections.find((section) => section.industryType === "GENERAL");
+        if (addedGeneral) openGeneralRename(addedGeneral);
+      }
     } catch (e: unknown) {
       const err = e as { response?: { status?: number; data?: { message?: string; error?: string } } };
       const status = err.response?.status;
@@ -378,6 +387,31 @@ export default function AdminPage() {
       } else {
         setSectionMsg(t("admin.serviceAddFailed"));
       }
+    }
+  }
+
+  function openGeneralRename(section: SectionStatsDto) {
+    setRenameTarget(section);
+    setRenameDraft(section.displayName);
+    setRenameMsg(null);
+  }
+
+  async function saveGeneralRename() {
+    const displayName = renameDraft.trim();
+    if (!renameTarget || !displayName) {
+      setRenameMsg(t("admin.generalNameRequired"));
+      return;
+    }
+    setRenameSaving(true);
+    setRenameMsg(null);
+    try {
+      const updated = await updateSectionDisplayName(renameTarget.sectionCode, displayName);
+      setOverview(updated);
+      setRenameTarget(null);
+    } catch {
+      setRenameMsg(t("admin.generalRenameFailed"));
+    } finally {
+      setRenameSaving(false);
     }
   }
 
@@ -845,6 +879,11 @@ export default function AdminPage() {
                         <div className="flex items-center justify-between mb-3">
                           <div className="font-semibold">
                             {s.displayName}
+                            {s.industryType === "GENERAL" && (
+                              <button onClick={() => openGeneralRename(s)} className="ml-2 text-xs font-normal text-brand hover:underline">
+                                {t("common.edit")}
+                              </button>
+                            )}
                             {!s.active && !s.globallyBanned && (
                               <span className="text-xs font-normal text-gray-400 ml-2">{t("admin.disabledTag")}</span>
                             )}
@@ -1651,6 +1690,35 @@ export default function AdminPage() {
                   </Button>
                   <Button variant="ghost" onClick={() => setDeleteTarget(null)} className="w-full">
                     {t("admin.deleteNo")}
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {renameTarget && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
+              <Card className="max-w-sm w-full">
+                <h2 className="text-lg font-bold mb-1">{t("admin.generalRenameTitle")}</h2>
+                <p className="text-sm text-gray-600 mb-4">{t("admin.generalRenameInfo")}</p>
+                <label htmlFor="general-service-name" className="block text-sm text-gray-600 mb-1">
+                  {t("admin.generalNameLabel")}
+                </label>
+                <input
+                  id="general-service-name"
+                  value={renameDraft}
+                  onChange={(event) => setRenameDraft(event.target.value)}
+                  maxLength={100}
+                  autoFocus
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/40"
+                />
+                {renameMsg && <p className="text-xs text-red-500 mt-2">{renameMsg}</p>}
+                <div className="flex flex-col gap-2 mt-4">
+                  <Button onClick={saveGeneralRename} disabled={renameSaving || !renameDraft.trim()} className="w-full">
+                    {renameSaving ? t("common.saving") : t("common.save")}
+                  </Button>
+                  <Button variant="ghost" onClick={() => setRenameTarget(null)} disabled={renameSaving} className="w-full">
+                    {t("common.cancel")}
                   </Button>
                 </div>
               </Card>

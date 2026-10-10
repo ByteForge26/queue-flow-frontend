@@ -654,8 +654,8 @@ export default function TrackPage(): Element {
             />
 
             <TimeBox
-              label={t("track.readyTime")}
-              value={ticket.readyTime}
+              label={t("track.readyOrCompletedTime")}
+              value={ticket.readyTime ?? ticket.completedTime}
             />
           </div>
 
@@ -688,49 +688,69 @@ export default function TrackPage(): Element {
             Neeche total amount bold mein dikhata hai.
         ============================================================ */}
 
-        {ticket.items.length > 0 && (
+        {(ticket.items.length > 0 || ticket.paymentReceived != null) && (
           <Card className="mb-4">
 
-            <h2 className="font-semibold mb-2">
-              {t("track.items")}
-            </h2>
+            {ticket.items.length > 0 && (
+              <h2 className="font-semibold mb-2">
+                {t("track.items")}
+              </h2>
+            )}
 
-            <ul className="text-sm text-gray-600 space-y-1">
+            {ticket.items.length > 0 && (
+              <ul className="text-sm text-gray-600 space-y-1">
 
-              {ticket.items.map(
-                (it: TicketItemDto, i: number): Element => (
-                  <li
-                    key={i}
-                    className="flex justify-between"
-                  >
-                    <span>
-                      {it.itemName}{" "}
-                      <span className="text-gray-400">
-                        x{it.quantity}
+                {ticket.items.map(
+                  (it: TicketItemDto, i: number): Element => (
+                    <li
+                      key={i}
+                      className="flex justify-between"
+                    >
+                      <span>
+                        {it.itemName}{" "}
+                        <span className="text-gray-400">
+                          x{it.quantity}
+                        </span>
                       </span>
-                    </span>
 
-                    <span className="text-gray-500">
-                      ₹{it.lineTotal}
-                    </span>
-                  </li>
-                )
-              )}
+                      <span className="text-gray-500">
+                        ₹{it.lineTotal}
+                      </span>
+                    </li>
+                  )
+                )}
 
-            </ul>
+              </ul>
+            )}
 
             {/* Total amount — sabhi items ka sum */}
-            <div className="flex justify-between border-t border-gray-100 mt-2 pt-2 font-semibold">
+            {ticket.items.length > 0 && (
+              <div className="flex justify-between border-t border-gray-100 mt-2 pt-2 font-semibold">
 
-              <span>
-                {t("common.total")}
-              </span>
+                <span>
+                  {t("common.total")}
+                </span>
 
-              <span className="text-brand">
-                ₹{ticket.totalAmount}
-              </span>
+                <span className="text-brand">
+                  ₹{ticket.totalAmount}
+                </span>
 
-            </div>
+              </div>
+            )}
+            {ticket.paymentReceived != null && (
+              <div className="space-y-1 text-sm border-t border-gray-100 mt-2 pt-2">
+                <div className="flex justify-between font-semibold">
+                  <span>{t("track.amountPaid")}</span>
+                  <span className="text-emerald-700">₹{ticket.paymentReceived}</span>
+                </div>
+                {(ticket.totalAmount ?? 0) > ticket.paymentReceived && (
+                  <div className="flex justify-between text-emerald-700">
+                    <span>{t("track.discountReceived")}</span>
+                    <span>₹{ticket.totalAmount! - ticket.paymentReceived}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </Card>
         )}
 

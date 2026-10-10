@@ -232,6 +232,8 @@ export default function OrderPage() {
       if (status === 409 && serverMsg?.includes("DAILY_LIMIT_REACHED")) setError(t("order.shopDailyLimit"));
       else if (status === 409 && serverMsg?.includes("PHONE_DAILY_LIMIT")) setError(t("order.phoneDailyLimit"));
       else if (status === 409 && serverMsg?.includes("OUTSIDE_OPERATING_HOURS")) setError(t("order.outsideHours"));
+      else if (status === 409 && serverMsg?.includes("Alag-alag numbers se bahut orders")) setError(t("order.tooManyPhoneNumbers"));
+      else if (status === 409 && serverMsg?.includes("Bahut saare orders ho gaye")) setError(t("order.tooManyRecentOrders"));
       else if (status === 409) setError(t("order.duplicate")); // Koi aur 409 error — duplicate order
       else if (status === 401) setError(t("order.shopCodeWrong")); // Galat shop code
       else setError(t("order.failed")); // Koi bhi aur error — generic failure message
@@ -437,12 +439,12 @@ export default function OrderPage() {
                   : config.items.filter((it: CatalogItemDto): boolean => it.serviceSectionId === activeSection);
 
                 // Items ko unke section ke naam ke hisaab se group karo.
-                // Jis item ka section nahi mila (ya null hai) wo "Other" me jaata hai.
+                // Jis item ka section nahi mila (ya null hai) wo Uncategorized mein jaata hai.
                 const bySection: Record<string, CatalogItemDto[]> = {};
                 itemsToShow.forEach((item: CatalogItemDto): void => {
                   const sec: ServiceSectionDto | undefined =
                     config.sections.find((s: ServiceSectionDto): boolean => s.id === item.serviceSectionId);
-                  const key: string = sec ? sec.name : "Other";
+                  const key: string = sec ? sec.name : "Uncategorized";
                   (bySection[key] = bySection[key] ?? []).push(item);
                 });
 

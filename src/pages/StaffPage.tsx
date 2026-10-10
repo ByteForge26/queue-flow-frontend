@@ -172,6 +172,7 @@ export default function StaffPage(): Element {
 
   // payComment — payment modal mein staff jo note/comment type karta hai (optional)
   const [payComment, setPayComment] = useState("");
+  const payDiscount = Math.max(0, (paymentTicket?.totalAmount ?? 0) - (Number(payAmount) || 0));
 
   // payPendingReason — payment pending mark karne ka reason (agar payment nahi mila)
   const [payPendingReason, setPayPendingReason] = useState("");
@@ -782,24 +783,40 @@ export default function StaffPage(): Element {
             <p className="text-sm text-gray-500 mb-1">
               {t("staff.payBody", { id: paymentTicket.id, name: paymentTicket.customerName })}
             </p>
-            {/* Items list aur total amount reminder */}
+            {/* Items list aur original order total */}
             <div className="text-xs text-gray-400 mb-3">
               {paymentTicket.items.map((i: TicketItemDto) => `${i.itemName} x${i.quantity}`).join(", ") || "—"}
-              {(paymentTicket.totalAmount ?? 0) > 0 && ` · ₹${paymentTicket.totalAmount}`}
+              {(paymentTicket.totalAmount ?? 0) > 0 && ` · ${t("staff.orderTotal")}: ₹${paymentTicket.totalAmount}`}
             </div>
 
             {/* Received branch — payment mil gayi */}
             {/* Amount input + comment/note input + "Complete" button */}
             <div className="space-y-2 border-b border-gray-100 pb-3 mb-3">
-              {/* Payment amount — numeric, pre-filled from ticket.totalAmount */}
+              {/* Final amount input; discount is calculated from the original total */}
               <input
                 type="number"
                 min="0"
                 value={payAmount}
                 placeholder={t("staff.payAmount")}
+                aria-label={t("staff.finalAmountAfterDiscount")}
                 onChange={(e: ChangeEvent<HTMLInputElement>): void => setPayAmount(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
               />
+              <p className="text-xs text-gray-500">
+                {t("staff.discountAmountHint")}
+              </p>
+              <div className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                <div className="flex justify-between">
+                  <span>{t("staff.finalAmountAfterDiscount")}</span>
+                  <span className="font-semibold">₹{Number(payAmount) || 0}</span>
+                </div>
+                {payDiscount > 0 && (
+                  <div className="flex justify-between mt-1">
+                    <span>{t("staff.discountGiven")}</span>
+                    <span className="font-semibold">₹{payDiscount}</span>
+                  </div>
+                )}
+              </div>
               {/* Optional note/comment about payment */}
               <input
                 value={payComment}

@@ -23,6 +23,7 @@ import {
   deleteServiceSection,
   moveItemsToSection,
   getShopDetails,
+  getAdminOverview,
 } from "../lib/api";
 
 import type { MenuItemDto, ServiceSectionDto } from "../lib/types";
@@ -32,10 +33,29 @@ export default function MenuPage(): JSX.Element {
   // shopCode: admin dashboard pe wapas jaane ke liye link mein use hoga.
   // sectionCode: is section ke menu items fetch karne ke liye API call mein use hoga.
   const { shopCode = "", sectionCode = "" } = useParams();
+  const [businessDisplayName, setBusinessDisplayName] = useState<string>("");
 
   // t() function translation ke liye — koi bhi text display karna ho to t("key") use karo
   // FIX: UseT → useT (import ka naam case-sensitive hai)
   const t = useT();
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadBusinessDisplayName(): Promise<void> {
+      try {
+        const overview = await getAdminOverview();
+        const section = overview.sections.find((item) => item.sectionCode === sectionCode);
+        if (!cancelled) setBusinessDisplayName(section?.displayName || sectionCode);
+      } catch (err: unknown) {
+        console.error("Failed to load service display name:", err);
+        if (!cancelled) setBusinessDisplayName(sectionCode);
+      }
+    }
+    void loadBusinessDisplayName();
+    return () => {
+      cancelled = true;
+    };
+  }, [sectionCode]);
 
   // items: server se fetch kiye gaye is section ke saare MenuItemDto objects ki list
   const [items, setItems] = useState<MenuItemDto[]>([]);
@@ -108,21 +128,21 @@ export default function MenuPage(): JSX.Element {
   // eCat: edit form mein item ki category
   const [eCat, setECat] = useState<string>("");
 
-  // loadServiceSections: service sections fetch karta hai
-  // FIX: pehle ye function define tha lekin kabhi call nahi hota tha,
-  // isliye sections page load pe nahi aate the. Ab useEffect se call hota hai.
-  const loadServiceSections = useCallback(async (): Promise<void> => {
-    try {
-      const sections = await getServiceSections(sectionCode);
-      setServiceSections(sections);
-    } catch (err) {
-      console.error("Failed to load service sections:", err);
-    }
-  }, [sectionCode]);
-
   useEffect(() => {
-    loadServiceSections();
-  }, [loadServiceSections]);
+    let cancelled = false;
+    async function loadServiceSections(): Promise<void> {
+      try {
+        const sections = await getServiceSections(sectionCode);
+        if (!cancelled) setServiceSections(sections);
+      } catch (err) {
+        console.error("Failed to load service sections:", err);
+      }
+    }
+    void loadServiceSections();
+    return () => {
+      cancelled = true;
+    };
+  }, [sectionCode]);
 
   // refresh: ye function API se latest menu items fetch karta hai aur state update karta hai.
   // useCallback use kiya hai taaki ye function tab hi re-create ho jab sectionCode badle —
@@ -344,7 +364,7 @@ export default function MenuPage(): JSX.Element {
         </Link>
 
         <h1 className="mt-2 text-3xl font-bold">
-          {t("menu.title", { section: sectionCode })}
+          {t("menu.title", { section: businessDisplayName || sectionCode })}
         </h1>
 
         <p className="mt-2 text-sm text-indigo-100">{t("menu.subtitle")}</p>
