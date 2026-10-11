@@ -18,6 +18,7 @@ import {
   markPaymentPending,
 } from "../lib/api";
 import { useStomp } from "../hooks/useStomp";
+import { disableAdminPushNotifications, enableAdminPushNotifications, isAdminPushConfigured } from "../lib/pushNotifications";
 import { Button, Card, Spinner, StatusBadge } from "../components/ui";
 import LanguageToggle from "../components/LanguageToggle";
 import type {
@@ -100,6 +101,22 @@ export default function StaffPage(): Element {
   const audioContextRef = useRef<AudioContext | null>(null);
   const knownTicketIdsRef = useRef<Set<number> | null>(null);
   const alertsEnabledRef = useRef(false);
+  const pushPreferenceKey = `queueflow.shop-push.${auth?.username ?? "unknown"}`;
+
+  useEffect(() => {
+    if (!auth || !isAdminPushConfigured() || !("Notification" in window)
+      || Notification.permission !== "granted") return;
+    if (localStorage.getItem(pushPreferenceKey) === "disabled") return;
+    enableAdminPushNotifications()
+      .then(() => {
+        localStorage.setItem(pushPreferenceKey, "enabled");
+        setNewOrderAlertsEnabled(true);
+        alertsEnabledRef.current = true;
+      })
+      .catch((error: unknown) => {
+        setNewOrderAlertError(error instanceof Error ? error.message : t("staff.newOrderAlertEnableFailed"));
+      });
+  }, [auth?.username, pushPreferenceKey, t]);
 
   useEffect((): (() => void) => {
     return (): void => {
@@ -137,9 +154,6 @@ export default function StaffPage(): Element {
         oscillator.stop(audioContext.currentTime + 0.26);
       }
 
-      if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(t("staff.newOrderTitle"), { body: message });
-      }
     }
   }, [t]);
 
@@ -147,8 +161,15 @@ export default function StaffPage(): Element {
     setNewOrderAlertError(null);
     try {
       if ("Notification" in window && Notification.permission === "default") {
-        await Notification.requestPermission();
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") throw new Error("Notification permission was not granted.");
       }
+      if (!("Notification" in window) || Notification.permission !== "granted") {
+        throw new Error("Notification permission is required.");
+      }
+      if (!isAdminPushConfigured()) throw new Error("Firebase push is not configured.");
+      await enableAdminPushNotifications();
+      localStorage.setItem(pushPreferenceKey, "enabled");
 
       if ("AudioContext" in window) {
         const audioContext = audioContextRef.current ?? new AudioContext();
@@ -158,6 +179,18 @@ export default function StaffPage(): Element {
 
       setNewOrderAlertsEnabled(true);
       alertsEnabledRef.current = true;
+    } catch {
+      setNewOrderAlertError(t("staff.newOrderAlertEnableFailed"));
+    }
+  }
+
+  async function disableNewOrderAlerts(): Promise<void> {
+    setNewOrderAlertError(null);
+    try {
+      await disableAdminPushNotifications();
+      localStorage.setItem(pushPreferenceKey, "disabled");
+      setNewOrderAlertsEnabled(false);
+      alertsEnabledRef.current = false;
     } catch {
       setNewOrderAlertError(t("staff.newOrderAlertEnableFailed"));
     }
@@ -394,7 +427,16 @@ export default function StaffPage(): Element {
   // ---------------------------------------------------------------------
 
   // logout — auth clear karo (localStorage/cookie) aur /shop login page par bhejo
-  function logout(): void {
+  async function logout(): Promise<void> {
+    if ((auth?.role === "STAFF" || auth?.role === "ADMIN")
+      && typeof Notification !== "undefined" && Notification.permission === "granted") {
+      try {
+        await disableAdminPushNotifications();
+        localStorage.setItem(pushPreferenceKey, "disabled");
+      } catch (pushError: unknown) {
+        console.warn("Could not unregister this browser's push token during logout.", pushError);
+      }
+    }
     clearAuth();
     navigate("/shop");
   }
@@ -522,8 +564,7 @@ export default function StaffPage(): Element {
             type="button"
             onClick={(): void => {
               if (newOrderAlertsEnabled) {
-                setNewOrderAlertsEnabled(false);
-                alertsEnabledRef.current = false;
+                void disableNewOrderAlerts();
               } else {
                 void enableNewOrderAlerts();
               }

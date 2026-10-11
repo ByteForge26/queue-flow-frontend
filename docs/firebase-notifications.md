@@ -1,6 +1,6 @@
 # QueueFlow admin push notifications
 
-QueueFlow keeps its existing WebSocket updates for customers tracking an order and for live staff queues. Firebase Cloud Messaging adds browser push notifications for shop admins when a new order is placed or an order status changes, including cancellations.
+QueueFlow keeps its existing WebSocket updates for customers tracking an order and for live staff queues. Firebase Cloud Messaging sends browser push notifications to opted-in shop admins and staff for new orders and status changes. Customers can opt in on their order tracking page to receive order status updates, including picked up, being prepared, ready for pickup, completed, and cancelled, even when the tracking page is closed.
 
 ## Firebase web app settings
 
@@ -29,6 +29,26 @@ base64 -w 0 /path/to/firebase-service-account.json
 
 Copy the resulting single-line value into the backend host's secret environment variable `FIREBASE_SERVICE_ACCOUNT_BASE64`. In Render, `render.yaml` declares this as a secret input when the Blueprint is synced; alternatively add it in the backend service's Environment settings. Do not commit the JSON or encoded value to Git, paste it into chat, or add it to frontend variables.
 
-The backend creates the token table automatically with the existing Hibernate schema setting. Each shop admin should log in, open **Settings > Order notifications**, and enable notifications in each browser/device they want to receive them on. Browser permission must be allowed. Logging out unregisters that browser's token.
+### Local backend
 
-Push delivery is best-effort and requires network access to Firebase. If the Firebase server credential is not configured, the backend still starts and existing WebSocket behavior continues, but the admin push registration endpoint remains unavailable.
+The local Spring Boot process needs the same server credential configured; it
+does not read the frontend's `.env.local` file. Set `FIREBASE_SERVICE_ACCOUNT_BASE64`
+in the backend's IntelliJ Run Configuration environment variables, or export it
+in the terminal before starting the backend. On Linux, you can encode the JSON
+locally without printing the encoded secret:
+
+```sh
+export FIREBASE_SERVICE_ACCOUNT_BASE64="$(base64 -w 0 /path/to/firebase-service-account.json)"
+cd queueflow-backend
+./mvnw spring-boot:run
+```
+
+Replace the example path with the private JSON file's actual path. Keep the JSON
+and encoded value out of Git and do not put either in frontend environment
+variables. Restart the backend after setting the variable. Without it, Firebase
+push registration on the local backend returns HTTP 500, although the app and
+existing WebSocket behavior can continue to work.
+
+The backend creates push-token tables automatically with the existing Hibernate schema setting. Each shop admin should log in, open **Settings > Order notifications**, and enable notifications on each browser/device they want to receive them on. Each staff member must enable alerts from the staff page on their own browser/device. Customers opt in using the alerts button on their order tracking page. Browser notification permission must be allowed. Logging out unregisters the shop user's token.
+
+Push delivery is best-effort and requires network access to Firebase. If the Firebase server credential is not configured, the backend still starts and existing WebSocket behavior continues, but push registration remains unavailable.

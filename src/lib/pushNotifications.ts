@@ -1,6 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import {
-  deleteToken,
   getMessaging,
   getToken,
   isSupported,
@@ -8,7 +7,12 @@ import {
   type MessagePayload,
   type Unsubscribe,
 } from "firebase/messaging";
-import { removeAdminPushToken, saveAdminPushToken } from "./api";
+import {
+  removeAdminPushToken,
+  removeCustomerPushToken,
+  saveAdminPushToken,
+  saveCustomerPushToken,
+} from "./api";
 
 const appName = "queueflow-web-push";
 
@@ -70,6 +74,29 @@ export async function enableAdminPushNotifications(): Promise<void> {
   await saveAdminPushToken(token);
 }
 
+export async function enableCustomerPushNotifications(trackingToken: string): Promise<void> {
+  const { messaging, serviceWorkerRegistration } = await messagingContext();
+  const token = await getToken(messaging, {
+    vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+    serviceWorkerRegistration,
+  });
+  if (!token) {
+    throw new Error("Firebase did not return a browser registration token.");
+  }
+  await saveCustomerPushToken(trackingToken, token);
+}
+
+export async function disableCustomerPushNotifications(trackingToken: string): Promise<void> {
+  const { messaging, serviceWorkerRegistration } = await messagingContext();
+  const token = await getToken(messaging, {
+    vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+    serviceWorkerRegistration,
+  });
+  if (token) {
+    await removeCustomerPushToken(trackingToken, token);
+  }
+}
+
 export async function disableAdminPushNotifications(): Promise<void> {
   const { messaging, serviceWorkerRegistration } = await messagingContext();
   const token = await getToken(messaging, {
@@ -78,12 +105,11 @@ export async function disableAdminPushNotifications(): Promise<void> {
   });
   if (token) {
     await removeAdminPushToken(token);
-    await deleteToken(messaging);
   }
 }
 
-export async function listenForAdminPushNotifications(): Promise<Unsubscribe | null> {
-  if (!isAdminPushConfigured() || Notification.permission !== "granted") return null;
+export async function listenForPushNotifications(): Promise<Unsubscribe | null> {
+  if (!isAdminPushConfigured() || !("Notification" in window)) return null;
 
   const { messaging } = await messagingContext();
   return onMessage(messaging, (payload: MessagePayload) => {

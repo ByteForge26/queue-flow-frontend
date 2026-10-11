@@ -9,6 +9,11 @@ import { getTicket, getFormConfig, cancelTicket, getQueueProgress, getPublicPaym
 import { getLocalOrders } from "../lib/auth";
 import type { LocalOrder } from "../lib/auth";
 import { useStomp } from "../hooks/useStomp";
+import {
+  disableCustomerPushNotifications,
+  enableCustomerPushNotifications,
+  isAdminPushConfigured,
+} from "../lib/pushNotifications";
 import { Card, StatusBadge, Button, Spinner } from "../components/ui";
 import CustomerHeader from "../components/CustomerHeader";
 import ShopContact from "../components/ShopContact";
@@ -73,6 +78,7 @@ export default function TrackPage(): Element {
     legacyLocalOrder?.shopCode ??
     localOrders.find((order: LocalOrder): boolean => order.ticketId === ticket?.id)?.shopCode;
   const [alertsEnabled, setAlertsEnabled] = useState<boolean>(false);
+  const [alertsBusy, setAlertsBusy] = useState<boolean>(false);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [alertError, setAlertError] = useState<string | null>(null);
   const [queueProgress, setQueueProgress] = useState<number[] | null>(null);
@@ -137,6 +143,24 @@ export default function TrackPage(): Element {
   useEffect((): void => {
     load();
   }, [load]);
+
+  useEffect((): void => {
+    const key = `queueflow.customer-push.${trackingToken}`;
+    if (!ticket || !("Notification" in window) || Notification.permission !== "granted") return;
+    if (ticket.status === "COMPLETED" || ticket.status === "CANCELLED") {
+      localStorage.removeItem(key);
+      setAlertsEnabled(false);
+      return;
+    }
+    if (localStorage.getItem(key) !== "enabled") return;
+    // Re-register the device token after reload so this order keeps receiving background updates.
+    enableCustomerPushNotifications(trackingToken)
+      .then(() => setAlertsEnabled(true))
+      .catch(() => {
+        localStorage.removeItem(key);
+        setAlertError(t("track.alertEnableFailed"));
+      });
+  }, [ticket?.status, trackingToken, t]);
 
   const loadQueueProgress = useCallback((): void => {
     if (!trackingToken) return;
@@ -224,9 +248,6 @@ export default function TrackPage(): Element {
           oscillator.stop(audioContext.currentTime + 0.26);
         }
 
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification(t("track.statusChangedTitle"), { body: message });
-        }
       }
 
       setTicket(updatedTicket);
@@ -249,11 +270,18 @@ export default function TrackPage(): Element {
   }, [statusNotice]);
 
   async function enableAlerts(): Promise<void> {
+    setAlertsBusy(true);
     setAlertError(null);
     try {
       if ("Notification" in window && Notification.permission === "default") {
-        await Notification.requestPermission();
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") throw new Error("Notification permission was not granted.");
       }
+      if (!("Notification" in window) || Notification.permission !== "granted") {
+        throw new Error("Notification permission is required.");
+      }
+      if (!isAdminPushConfigured()) throw new Error("Firebase push is not configured.");
+      await enableCustomerPushNotifications(trackingToken);
 
       if ("AudioContext" in window) {
         const audioContext = audioContextRef.current ?? new AudioContext();
@@ -261,14 +289,27 @@ export default function TrackPage(): Element {
         if (audioContext.state === "suspended") await audioContext.resume();
       }
 
+      localStorage.setItem(`queueflow.customer-push.${trackingToken}`, "enabled");
       setAlertsEnabled(true);
     } catch {
       setAlertError(t("track.alertEnableFailed"));
+    } finally {
+      setAlertsBusy(false);
     }
   }
 
-  function disableAlerts(): void {
-    setAlertsEnabled(false);
+  async function disableAlerts(): Promise<void> {
+    setAlertsBusy(true);
+    setAlertError(null);
+    try {
+      await disableCustomerPushNotifications(trackingToken);
+      localStorage.removeItem(`queueflow.customer-push.${trackingToken}`);
+      setAlertsEnabled(false);
+    } catch {
+      setAlertError(t("track.alertEnableFailed"));
+    } finally {
+      setAlertsBusy(false);
+    }
   }
 
   // ================================================================
@@ -399,7 +440,9 @@ export default function TrackPage(): Element {
               </span>
               <div>
                 <h2 className="font-bold text-slate-900">{t("track.alertTitle")}</h2>
-                <p className="mt-1 text-sm leading-5 text-slate-600">{t("track.alertDescription")}</p>
+                <p className="mt-1 text-sm leading-5 text-slate-600">
+                  {isAdminPushConfigured() ? t("track.alertDescription") : t("track.pushNotConfigured")}
+                </p>
                 <span className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
                   alertsEnabled ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
                 }`}>
@@ -411,13 +454,14 @@ export default function TrackPage(): Element {
             <button
               type="button"
               onClick={alertsEnabled ? disableAlerts : enableAlerts}
+              disabled={alertsBusy || !isAdminPushConfigured()}
               className={`w-full shrink-0 rounded-xl px-4 py-3 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-4 sm:w-auto ${
                 alertsEnabled
                   ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 focus:ring-slate-100"
                   : "bg-gradient-to-r from-brand to-indigo-600 text-white shadow-indigo-500/20 hover:-translate-y-0.5 hover:shadow-lg focus:ring-indigo-200"
               }`}
             >
-              {t(alertsEnabled ? "track.disableAlerts" : "track.enableAlerts")}
+              {t(alertsBusy ? "common.loading" : alertsEnabled ? "track.disableAlerts" : "track.enableAlerts")}
             </button>
           </div>
           {alertError && <p className="mt-3 text-sm text-red-600" role="alert">{alertError}</p>}

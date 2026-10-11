@@ -383,6 +383,16 @@ export async function getTicket(trackingToken: string): Promise<TicketDto> {
   return data;
 }
 
+export async function saveCustomerPushToken(trackingToken: string, token: string): Promise<void> {
+  await api.post(`/public/tickets/${encodeURIComponent(trackingToken)}/notifications/token`, { token });
+}
+
+export async function removeCustomerPushToken(trackingToken: string, token: string): Promise<void> {
+  await api.delete(`/public/tickets/${encodeURIComponent(trackingToken)}/notifications/token`, {
+    data: { token },
+  });
+}
+
 // Customer apna ticket cancel kar sakta hai (queue se hata sakta hai)
 export async function cancelTicket(trackingToken: string): Promise<TicketDto> {
   const { data } = await api.post(`/public/tickets/${encodeURIComponent(trackingToken)}/cancel`);
@@ -409,11 +419,11 @@ export async function login(cmd: LoginCommand): Promise<AuthDto> {
 }
 
 export async function saveAdminPushToken(token: string): Promise<void> {
-  await api.post("/admin/notifications/token", { token });
+  await api.post("/staff/notifications/token", { token });
 }
 
 export async function removeAdminPushToken(token: string): Promise<void> {
-  await api.delete("/admin/notifications/token", { data: { token } });
+  await api.delete("/staff/notifications/token", { data: { token } });
 }
 
 // Naye shop owner ka signup - shop details ke saath account banao

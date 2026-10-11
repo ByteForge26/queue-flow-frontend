@@ -5,10 +5,15 @@ import {
   enableAdminPushNotifications,
   isAdminPushConfigured,
 } from "../lib/pushNotifications";
+import { getAuth } from "../lib/auth";
 
 export default function AdminPushSettings() {
-  const [enabled, setEnabled] = useState(
-    typeof Notification !== "undefined" && Notification.permission === "granted",
+  const auth = getAuth();
+  const preferenceKey = `queueflow.shop-push.${auth?.username ?? "unknown"}`;
+  const [enabled, setEnabled] = useState(() =>
+    typeof Notification !== "undefined"
+    && Notification.permission === "granted"
+    && localStorage.getItem(preferenceKey) !== "disabled",
   );
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -17,9 +22,10 @@ export default function AdminPushSettings() {
     if (!enabled || !isAdminPushConfigured()) return;
     enableAdminPushNotifications().catch((error: unknown) => {
       setEnabled(false);
+      localStorage.setItem(preferenceKey, "disabled");
       setMessage(error instanceof Error ? error.message : "Push notification setup failed.");
     });
-  }, []);
+  }, [enabled, preferenceKey]);
 
   async function toggleNotifications() {
     setBusy(true);
@@ -28,10 +34,12 @@ export default function AdminPushSettings() {
       if (enabled) {
         await disableAdminPushNotifications();
         setEnabled(false);
+        localStorage.setItem(preferenceKey, "disabled");
         setMessage("Notifications disabled on this browser.");
       } else {
         await enableAdminPushNotifications();
         setEnabled(true);
+        localStorage.setItem(preferenceKey, "enabled");
         setMessage("Notifications enabled for this browser.");
       }
     } catch (error: unknown) {

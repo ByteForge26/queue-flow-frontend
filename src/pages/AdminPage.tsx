@@ -37,7 +37,7 @@ import { OrderExtras } from "./StaffPage";
 import { useT } from "../i18n/LanguageContext";
 import LanguageToggle from "../components/LanguageToggle";
 import AdminPushSettings from "../components/AdminPushSettings";
-import { disableAdminPushNotifications, listenForAdminPushNotifications } from "../lib/pushNotifications";
+import { disableAdminPushNotifications } from "../lib/pushNotifications";
 
 // Section industryType -> left border color class
 const SECTION_BORDER: Record<string, string> = {
@@ -227,22 +227,6 @@ export default function AdminPage() {
     refresh();
   }, [refresh]);
 
-  useEffect(() => {
-    if (auth?.role !== "ADMIN") return;
-    let unsubscribe: (() => void) | null = null;
-    let disposed = false;
-    listenForAdminPushNotifications()
-      .then((stopListening) => {
-        if (disposed) stopListening?.();
-        else unsubscribe = stopListening;
-      })
-      .catch((error: unknown) => console.warn("Could not listen for Firebase notifications.", error));
-    return () => {
-      disposed = true;
-      unsubscribe?.();
-    };
-  }, [auth?.role]);
-
   //Shop ke paas pehle se uploaded payment QR hai toh preview load karo (ek baar)
   useEffect(() => {
     if (shopDetail?.hasPaymentQr && !paymentQrPreview) {
@@ -328,6 +312,7 @@ export default function AdminPage() {
     try {
       if (auth?.role === "ADMIN" && typeof Notification !== "undefined" && Notification.permission === "granted") {
         await disableAdminPushNotifications();
+        localStorage.setItem(`queueflow.shop-push.${auth.username}`, "disabled");
       }
     } catch (error: unknown) {
       console.warn("Could not unregister this browser's push token during logout.", error);

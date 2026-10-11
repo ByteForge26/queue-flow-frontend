@@ -61,6 +61,7 @@
 
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useLayoutEffect } from "react";
+import { useEffect } from "react";
 // React Router se teen cheezein import ki hain:
 //   - Routes   : Saare Route ko wrap karne wala container
 //   - Route    : Ek specific URL path ko ek component se map karta hai
@@ -103,6 +104,7 @@ import FieldsPage from "./pages/FieldsPage";
 
 import SuperAdminPage from "./pages/SuperAdminPage";
 // Superadmin ka page – poori app ka highest level admin, sabhi shops dekh sakta hai
+import { listenForPushNotifications } from "./lib/pushNotifications";
 
 // =====================================================================
 // App COMPONENT – Root routing component
@@ -112,6 +114,22 @@ import SuperAdminPage from "./pages/SuperAdminPage";
 // Iska koi apna state ya props nahi hain – sirf routes define karta hai.
 export default function App() {
   const { pathname } = useLocation();
+
+  useEffect(() => {
+    // Keep foreground push handling mounted across all customer, staff, and admin routes.
+    let unsubscribe: (() => void) | null = null;
+    let disposed = false;
+    listenForPushNotifications()
+      .then((stopListening) => {
+        if (disposed) stopListening?.();
+        else unsubscribe = stopListening;
+      })
+      .catch((error: unknown) => console.warn("Could not listen for Firebase notifications.", error));
+    return () => {
+      disposed = true;
+      unsubscribe?.();
+    };
+  }, []);
 
   useLayoutEffect((): void => {
     window.scrollTo(0, 0);
