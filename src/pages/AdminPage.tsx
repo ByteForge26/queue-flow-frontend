@@ -36,6 +36,8 @@ import { clearAuth, getAuth } from "../lib/auth";
 import { OrderExtras } from "./StaffPage";
 import { useT } from "../i18n/LanguageContext";
 import LanguageToggle from "../components/LanguageToggle";
+import AdminPushSettings from "../components/AdminPushSettings";
+import { disableAdminPushNotifications, listenForAdminPushNotifications } from "../lib/pushNotifications";
 
 // Section industryType -> left border color class
 const SECTION_BORDER: Record<string, string> = {
@@ -225,6 +227,22 @@ export default function AdminPage() {
     refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (auth?.role !== "ADMIN") return;
+    let unsubscribe: (() => void) | null = null;
+    let disposed = false;
+    listenForAdminPushNotifications()
+      .then((stopListening) => {
+        if (disposed) stopListening?.();
+        else unsubscribe = stopListening;
+      })
+      .catch((error: unknown) => console.warn("Could not listen for Firebase notifications.", error));
+    return () => {
+      disposed = true;
+      unsubscribe?.();
+    };
+  }, [auth?.role]);
+
   //Shop ke paas pehle se uploaded payment QR hai toh preview load karo (ek baar)
   useEffect(() => {
     if (shopDetail?.hasPaymentQr && !paymentQrPreview) {
@@ -306,7 +324,14 @@ export default function AdminPage() {
     setShowStaffAnalytics(true);
   }
 
-  function logout() {
+  async function logout() {
+    try {
+      if (auth?.role === "ADMIN" && typeof Notification !== "undefined" && Notification.permission === "granted") {
+        await disableAdminPushNotifications();
+      }
+    } catch (error: unknown) {
+      console.warn("Could not unregister this browser's push token during logout.", error);
+    }
     clearAuth();
     navigate("/shop");
   }
@@ -1117,6 +1142,7 @@ export default function AdminPage() {
                 <TabInfo icon="🔧" title={t("admin.tabInfoSettingsTitle")} color="slate"
                   bullets={[t("admin.tabInfoSettings1"), t("admin.tabInfoSettings2"),
                     t("admin.tabInfoSettings3"), t("admin.tabInfoSettings4"), t("admin.tabInfoSettings5")]} />
+                <AdminPushSettings />
                 {/* Shop details edit */}
                 <Card className="mb-4 border-t-4 border-t-slate-400">
                   <button

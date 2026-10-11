@@ -408,6 +408,14 @@ export async function login(cmd: LoginCommand): Promise<AuthDto> {
   return data;
 }
 
+export async function saveAdminPushToken(token: string): Promise<void> {
+  await api.post("/admin/notifications/token", { token });
+}
+
+export async function removeAdminPushToken(token: string): Promise<void> {
+  await api.delete("/admin/notifications/token", { data: { token } });
+}
+
 // Naye shop owner ka signup - shop details ke saath account banao
 // Signup ke baad directly logged in ho jata hai (AuthDto return hota hai)
 export async function ownerSignup(cmd: OwnerSignupCommand): Promise<AuthDto> {
