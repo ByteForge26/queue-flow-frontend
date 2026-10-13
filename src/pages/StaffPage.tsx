@@ -302,7 +302,7 @@ export default function StaffPage(): Element {
   // useStomp hook specified topic par subscribe karta hai
   // Jab bhi is topic par message bheje (naya order / status update), refresh() call hoga
   // Is tarah staff ko page reload karna nahi padta — real-time updates milte hain
-  useStomp(`/topic/business/${sectionCode}/queue`, (): void => refresh());
+  useStomp(`/topic/business/${sectionCode}/queue`, (): void => refresh(), refresh);
 
   // ---------------------------------------------------------------------
   // FUNCTION: advance — order ko agale status par le jaao

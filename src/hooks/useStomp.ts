@@ -42,7 +42,7 @@ import { WS_URL } from "../lib/config";
 //          nahi karta. Effect cleanup mein connection automatically band hota
 //          hai jab component unmount ho.
 // =====================================================================
-export function useStomp(topic: string, onMessage: (body: any) => void): void {
+export function useStomp(topic: string, onMessage: (body: any) => void, onConnected?: () => void): void {
 
     // useRef se hum `onMessage` callback ka ek "box" banate hain.
     // cbRef.current hamesha latest callback function ko point karta hai.
@@ -51,12 +51,14 @@ export function useStomp(topic: string, onMessage: (body: any) => void): void {
     // pe effect re-run hota. Ref ke through latest function milta hai bina
     // effect dobara chalaye.
     const cbRef: React.MutableRefObject<(body: any) => void> = useRef(onMessage);
+    const connectedCbRef: React.MutableRefObject<(() => void) | undefined> = useRef(onConnected);
 
     // Har render pe cbRef.current ko latest `onMessage` se update karo.
     // Isse guarantee milti hai ki jab bhi server message aaye, us waqt ka
     // sabse fresh callback call ho – chahe parent component ne callback change
     // kiya ho ya nahi.
     cbRef.current = onMessage;
+    connectedCbRef.current = onConnected;
 
     // useEffect: ye block tab run hota hai jab component mount ho YA jab
     // `topic` prop change ho. Topic change hone pe purana connection band
@@ -96,6 +98,7 @@ export function useStomp(topic: string, onMessage: (body: any) => void): void {
                         cbRef.current(msg.body);
                     }
                 });
+                connectedCbRef.current?.();
             },
         });
 
