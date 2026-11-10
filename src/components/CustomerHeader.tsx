@@ -28,7 +28,7 @@ export default function CustomerHeader({ shopCode }: { shopCode?: string }) {
           className="flex min-h-11 items-center gap-2 rounded-lg px-2 font-semibold text-slate-900 transition hover:bg-slate-50"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-xs text-white">
-            QF
+            MT
           </span>
           {t("app.name")}
         </Link>

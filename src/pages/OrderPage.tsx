@@ -706,7 +706,7 @@ export default function OrderPage() {
           {/* Submitting ho to "Placing..." dikhao, warna "Place Order · ₹total" */}
           {submitting
             ? t("order.placing")
-            : `${whenLater ? t("order.scheduleBtn") : t("order.placeBtn")}${payableTotal > 0 ? ` · ₹${payableTotal}` : ""}`}
+            : `${whenLater ? t("order.scheduleBtn") : t("order.placeBtn")}${orderTotal > 0 ? ` · ₹${orderTotal}` : ""}`}
         </Button>
 
         {/* Required fields nahi bhare to hint dikhao submit button ke neeche */}

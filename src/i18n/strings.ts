@@ -29,20 +29,20 @@ const en: Dict = {
   "common.backDashboard": "← Admin dashboard",
 
   // app / header
-  "app.name": "QueueFlow",
+  "app.name": "Meri Turn",
   "header.changeLocation": "Change location",
   "header.myOrders": "My orders",
   "lang.toggle": "हिंदी",
 
   // landing
-  "landing.tagline": "Any shop's queue — scan, order, track live",
+  "landing.tagline": "Your Order. Your Turn.",
   "landing.customer": "Customer",
   "landing.customerDesc": "Find a shop near you and order",
   "landing.shop": "Shop",
   "landing.shopDesc": "Owner or staff — login or register a new shop",
   "landing.qrNote": "Scanning a QR takes the customer straight to that shop's order page.",
-  "landing.eyebrow": "A simpler way to manage walk-in orders",
-  "landing.headline": "Less waiting. Clearer service.",
+  "landing.eyebrow": "ORDER SMART • TRACK LIVE • WAIT LESS",
+  "landing.headline": "Your Order. Your Turn.",
   "landing.intro": "Customers can find a shop, place an order, and follow its status from their phone. Your team manages the queue from one dashboard.",
   "landing.customerCta": "Find a shop",
   "landing.shopCta": "Shop & staff login",
@@ -597,20 +597,20 @@ const hi: Dict = {
   "common.backDashboard": "← Admin dashboard",
 
   // app / header
-  "app.name": "QueueFlow",
+  "app.name": "Meri Turn",
   "header.changeLocation": "Location badlo",
   "header.myOrders": "Mere orders",
   "lang.toggle": "English",
 
   // landing
-  "landing.tagline": "Kisi bhi shop ki queue — scan karo, order karo, live status dekho",
+  "landing.tagline": "Your Order. Your Turn.",
   "landing.customer": "Customer",
   "landing.customerDesc": "Apne paas ki shop dhoondho aur order karo",
   "landing.shop": "Shop",
   "landing.shopDesc": "Owner ya staff — login ya nayi shop register karo",
   "landing.qrNote": "QR code scan karne pe customer seedha us shop ke order page pe pahunchta hai.",
-  "landing.eyebrow": "Walk-in orders ko manage karne ka aasan tareeka",
-  "landing.headline": "Kam intezaar. Behtar service.",
+  "landing.eyebrow": "ORDER SMART • TRACK LIVE • WAIT LESS",
+  "landing.headline": "Your Order. Your Turn.",
   "landing.intro": "Customer shop dhoondh sakte hain, order kar sakte hain aur phone par status dekh sakte hain. Aapki team ek dashboard se queue sambhalti hai.",
   "landing.customerCta": "Shop dhoondhein",
   "landing.shopCta": "Shop aur staff login",

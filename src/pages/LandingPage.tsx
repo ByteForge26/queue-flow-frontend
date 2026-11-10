@@ -14,11 +14,11 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen px-4 pb-14 sm:px-6">
       <header className="mx-auto flex max-w-6xl items-center justify-between border-b border-slate-200 py-4">
-        <Link to="/" className="flex items-center gap-3" aria-label="QueueFlow home">
+        <Link to="/" className="flex items-center gap-3" aria-label="Meri Turn home">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-sm font-bold tracking-tight text-white">
-            QF
+            MT
           </span>
-          <span className="text-lg font-semibold tracking-tight text-slate-900">QueueFlow</span>
+          <span className="text-lg font-semibold tracking-tight text-slate-900">Meri Turn</span>
         </Link>
         <div className="flex items-center gap-2 sm:gap-4">
           <Link to="/shop" className="hidden min-h-11 items-center rounded-lg px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:inline-flex">

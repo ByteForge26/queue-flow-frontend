@@ -274,10 +274,10 @@ export default function ShopAuthPage() {
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-lg font-bold text-white">
-              QF
+              MT
             </div>
             <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">QueueFlow</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Meri Turn</div>
               <div className="font-semibold text-slate-900">{t("auth.title")}</div>
             </div>
           </div>

@@ -115,7 +115,7 @@ export async function listenForPushNotifications(): Promise<Unsubscribe | null> 
   return onMessage(messaging, (payload: MessagePayload) => {
     if (!payload.notification || Notification.permission !== "granted") return;
 
-    const notification = new Notification(payload.notification.title ?? "QueueFlow", {
+    const notification = new Notification(payload.notification.title ?? "Meri Turn", {
       body: payload.notification.body,
       icon: "/favicon.svg",
     });
