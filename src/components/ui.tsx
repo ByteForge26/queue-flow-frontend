@@ -49,7 +49,7 @@ export function Card({
   return (
     <div
       onClick={onClick}
-      className={`rounded-[24px] border border-slate-200/80 bg-white/85 p-5 shadow-[0_10px_35px_rgba(15,23,42,0.06)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(79,70,229,0.1)] ${className}`}
+      className={`rounded-2xl border border-slate-300 bg-white p-5 shadow-[0_4px_14px_rgba(15,23,42,0.055)] ${className}`}
     >
       {children}
     </div>
@@ -96,13 +96,13 @@ export function Button({
 }) {
   const styles: Record<string, string> = {
     primary:
-      "bg-gradient-to-r from-brand to-indigo-600 text-white shadow-[0_12px_30px_rgba(79,70,229,0.24)] hover:translate-y-[-1px] hover:shadow-[0_16px_34px_rgba(79,70,229,0.28)]",
+      "bg-brand text-white shadow-sm hover:bg-brand-dark hover:shadow-md",
     ghost:
-      "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+      "border border-slate-300 bg-white text-slate-800 shadow-sm hover:border-slate-400 hover:bg-slate-50",
     success:
-      "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-[0_12px_30px_rgba(16,185,129,0.22)] hover:translate-y-[-1px]",
+      "bg-emerald-700 text-white shadow-sm hover:bg-emerald-800 hover:shadow-md",
     staff:
-      "bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-[0_12px_30px_rgba(13,148,136,0.22)] hover:translate-y-[-1px]",
+      "bg-teal-700 text-white shadow-sm hover:bg-teal-800 hover:shadow-md",
   };
 
   return (
@@ -110,7 +110,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${styles[variant]} ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${styles[variant]} ${className}`}
     >
       {children}
     </button>

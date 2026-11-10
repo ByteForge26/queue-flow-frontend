@@ -21,13 +21,13 @@ export default function CustomerHeader({ shopCode }: { shopCode?: string }) {
   const t = useT();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
         <Link
           to="/"
-          className="flex items-center gap-2 rounded-full border border-indigo-100 bg-gradient-to-r from-indigo-50 to-white px-3 py-1.5 font-semibold text-brand shadow-[0_10px_25px_rgba(79,70,229,0.08)] transition hover:border-indigo-200 hover:shadow-[0_12px_30px_rgba(79,70,229,0.12)]"
+          className="flex min-h-11 items-center gap-2 rounded-lg px-2 font-semibold text-slate-900 transition hover:bg-slate-50"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-brand to-indigo-600 text-xs text-white shadow-lg shadow-indigo-500/30">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-xs text-white">
             QF
           </span>
           {t("app.name")}
@@ -36,17 +36,17 @@ export default function CustomerHeader({ shopCode }: { shopCode?: string }) {
         <nav className="flex items-center gap-1.5 text-sm sm:gap-2">
           <Link
             to="/customer"
-            className="rounded-full px-3 py-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-brand"
+            className="inline-flex min-h-11 items-center rounded-lg px-3 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
           >
             {t("header.changeLocation")}
           </Link>
           <Link
             to={shopCode ? `/my-orders/${shopCode}` : "/customer"}
-            className="rounded-full px-3 py-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-brand"
+            className="inline-flex min-h-11 items-center rounded-lg px-3 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
           >
             {t("header.myOrders")}
           </Link>
-          <div className="ml-1 rounded-full border border-slate-200 bg-slate-50/80 p-1 shadow-inner shadow-slate-200/60">
+          <div className="ml-1">
             <LanguageToggle />
           </div>
         </nav>

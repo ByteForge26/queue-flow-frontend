@@ -481,7 +481,7 @@ export default function StaffPage(): Element {
       {/* Teal gradient background; left side: pulsing dot + section name + shop name */}
       {/* Right side: section dropdown (agar multiple), admin link, refresh, logout, language */}
       {/* ------------------------------------------------------------- */}
-      <div className="mb-4 rounded-[28px] bg-gradient-to-r from-slate-900 via-teal-700 to-cyan-600 p-4 text-white shadow-[0_20px_45px_rgba(13,148,136,0.18)]">
+      <div className="mb-4 rounded-2xl bg-slate-900 p-4 text-white shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {/* Live indicator — animated pulsing dot bata raha hai page real-time connected hai */}

@@ -15,10 +15,10 @@ export default function LanguageToggle() {
   return (
     <button
       onClick={() => setLang(lang === "en" ? "hi" : "en")}
-      className="inline-flex items-center justify-center rounded-full border border-indigo-100 bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold tracking-[0.16em] text-slate-700 shadow-[0_8px_20px_rgba(79,70,229,0.08)] transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-brand"
+      className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold tracking-wide text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
       title={lang === "en" ? "हिंदी में देखो" : "View in English"}
     >
-      <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-50 text-[9px] text-brand">
+      <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-[9px] text-slate-700">
         {lang === "en" ? "EN" : "हिं"}
       </span>
       {t("lang.toggle")}

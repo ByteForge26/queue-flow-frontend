@@ -3,7 +3,7 @@
 // ================================================================
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { ReactElement as Element } from "react";
-import { useParams, Link, Navigate } from "react-router-dom";
+import { useParams, Link, Navigate, useLocation } from "react-router-dom";
 import { useT } from "../i18n/LanguageContext";
 import { getTicket, getFormConfig, cancelTicket, getQueueProgress, getPublicPaymentQrUrl } from "../lib/api";
 import { getLocalOrders } from "../lib/auth";
@@ -47,6 +47,8 @@ export default function TrackPage(): Element {
   //
   // Agar URL mein koi value nahi to default empty string "" milta hai
   const { ticketId = "" } = useParams();
+  const location = useLocation();
+  const orderJustPlaced = (location.state as { orderJustPlaced?: unknown } | null)?.orderJustPlaced === true;
 
   // t() function — i18n translation ke liye;
   // key dedo, translated string milega
@@ -78,6 +80,10 @@ export default function TrackPage(): Element {
     legacyLocalOrder?.shopCode ??
     localOrders.find((order: LocalOrder): boolean => order.ticketId === ticket?.id)?.shopCode;
   const [alertsEnabled, setAlertsEnabled] = useState<boolean>(false);
+  const alertsCurrentlyEnabled = alertsEnabled
+    && ticket !== null
+    && ticket.status !== "COMPLETED"
+    && ticket.status !== "CANCELLED";
   const [alertsBusy, setAlertsBusy] = useState<boolean>(false);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [alertError, setAlertError] = useState<string | null>(null);
@@ -131,10 +137,12 @@ export default function TrackPage(): Element {
   //
   // Success par ticket state set karta hai;
   // failure par notFound true karta hai.
-  const load = useCallback((): void => {
+  const load = useCallback((showNotFound = true): void => {
     getTicket(trackingToken)
       .then(setTicket)
-      .catch((): void => setNotFoundToken(trackingToken));
+      .catch((): void => {
+        if (showNotFound) setNotFoundToken(trackingToken);
+      });
   }, [trackingToken, setTicket]);
 
   // Ye effect tab chalta hai jab component pehli baar mount ho
@@ -144,12 +152,18 @@ export default function TrackPage(): Element {
     load();
   }, [load]);
 
+  useEffect((): (() => void) | undefined => {
+    if (!ticket || ticket.status === "COMPLETED" || ticket.status === "CANCELLED") return;
+    const interval = window.setInterval((): void => load(false), 15000);
+    return (): void => window.clearInterval(interval);
+  }, [ticket, load]);
+
   useEffect((): void => {
     const key = `queueflow.customer-push.${trackingToken}`;
-    if (!ticket || !("Notification" in window) || Notification.permission !== "granted") return;
-    if (ticket.status === "COMPLETED" || ticket.status === "CANCELLED") {
+    const currentStatus = ticket?.status;
+    if (!currentStatus || !("Notification" in window) || Notification.permission !== "granted") return;
+    if (currentStatus === "COMPLETED" || currentStatus === "CANCELLED") {
       localStorage.removeItem(key);
-      setAlertsEnabled(false);
       return;
     }
     if (localStorage.getItem(key) !== "enabled") return;
@@ -233,7 +247,7 @@ export default function TrackPage(): Element {
       });
       setStatusNotice(message);
 
-      if (alertsEnabled) {
+      if (alertsCurrentlyEnabled) {
         const audioContext = audioContextRef.current;
         if (audioContext?.state === "running") {
           const oscillator = audioContext.createOscillator();
@@ -255,7 +269,7 @@ export default function TrackPage(): Element {
     }
 
     setTicket(updatedTicket);
-  });
+  }, (): void => load(false));
 
   useStomp(`/topic/business/${ticket?.businessCode ?? "unloaded"}/queue`, (body: { event?: string }): void => {
     if (body?.event === "QUEUE_UPDATED" && ticket?.status === "PLACED") {
@@ -384,6 +398,23 @@ export default function TrackPage(): Element {
       <CustomerHeader shopCode={shopCode} />
 
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
+        {orderJustPlaced && (
+          <div
+            className="mb-5 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm sm:p-5"
+            role="status"
+            aria-live="polite"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-lg font-bold text-white" aria-hidden="true">
+              ✓
+            </span>
+            <div>
+              <h2 className="font-semibold text-emerald-950">{t("track.orderPlacedTitle")}</h2>
+              <p className="mt-1 text-sm leading-6 text-emerald-800">
+                {t("track.orderPlacedDescription", { id: ticket.id })}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ============================================================
             ORDER HEADER SECTION
@@ -392,7 +423,7 @@ export default function TrackPage(): Element {
             aur shop ke contact details (phone/address) dikhata hai.
         ============================================================ */}
 
-        <div className="mb-6 rounded-[28px] bg-gradient-to-r from-brand via-indigo-600 to-violet-600 p-5 text-white shadow-[0_18px_45px_rgba(79,70,229,0.25)]">
+        <div className="mb-6 rounded-2xl bg-slate-900 p-5 text-white shadow-sm">
 
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -444,28 +475,28 @@ export default function TrackPage(): Element {
                   {isAdminPushConfigured() ? t("track.alertDescription") : t("track.pushNotConfigured")}
                 </p>
                 <span className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  alertsEnabled ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                  alertsCurrentlyEnabled ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
                 }`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${alertsEnabled ? "bg-emerald-500" : "bg-slate-400"}`} />
-                  {t(alertsEnabled ? "track.alertsOn" : "track.alertsOff")}
+                  <span className={`h-1.5 w-1.5 rounded-full ${alertsCurrentlyEnabled ? "bg-emerald-500" : "bg-slate-400"}`} />
+                  {t(alertsCurrentlyEnabled ? "track.alertsOn" : "track.alertsOff")}
                 </span>
               </div>
             </div>
             <button
               type="button"
-              onClick={alertsEnabled ? disableAlerts : enableAlerts}
+              onClick={alertsCurrentlyEnabled ? disableAlerts : enableAlerts}
               disabled={alertsBusy || !isAdminPushConfigured()}
               className={`w-full shrink-0 rounded-xl px-4 py-3 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-4 sm:w-auto ${
-                alertsEnabled
+                alertsCurrentlyEnabled
                   ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 focus:ring-slate-100"
                   : "bg-gradient-to-r from-brand to-indigo-600 text-white shadow-indigo-500/20 hover:-translate-y-0.5 hover:shadow-lg focus:ring-indigo-200"
               }`}
             >
-              {t(alertsBusy ? "common.loading" : alertsEnabled ? "track.disableAlerts" : "track.enableAlerts")}
+              {t(alertsBusy ? "common.loading" : alertsCurrentlyEnabled ? "track.disableAlerts" : "track.enableAlerts")}
             </button>
           </div>
           {alertError && <p className="mt-3 text-sm text-red-600" role="alert">{alertError}</p>}
-          {alertsEnabled && "Notification" in window && Notification.permission === "denied" && (
+          {alertsCurrentlyEnabled && "Notification" in window && Notification.permission === "denied" && (
             <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">{t("track.notificationsBlocked")}</p>
           )}
         </Card>

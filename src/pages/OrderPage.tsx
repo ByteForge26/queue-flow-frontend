@@ -22,6 +22,60 @@ import { inOrderCooldown, deviceOrderLimitReached, markOrderPlaced, pushLocalOrd
 // FIX: ServiceSectionDto import add kiya — pehle missing tha isliye "Cannot find name" error aa raha tha
 import type { FormConfigDto, FieldDto, CatalogItemDto, ServiceSectionDto, TicketDto } from "../lib/types";
 
+interface OrderDraft {
+  savedAt: number;
+  fieldValues: Record<string, string>;
+  qty: Record<string, number>;
+  selectedOptions: Record<string, string>;
+  activeSection: number | null;
+  sectionSearch: string;
+  comment: string;
+  shopCodeInput: string;
+  whenLater: boolean;
+  day: string;
+  time: string;
+}
+
+const ORDER_DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    && Object.values(value).every((entry) => typeof entry === "string");
+}
+
+function readOrderDraft(key: string): OrderDraft | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const value: unknown = JSON.parse(raw);
+    if (typeof value !== "object" || value === null) return null;
+    const draft = value as Partial<OrderDraft>;
+    if (typeof draft.savedAt !== "number" || Date.now() - draft.savedAt > ORDER_DRAFT_MAX_AGE_MS) {
+      localStorage.removeItem(key);
+      return null;
+    }
+
+    return {
+      savedAt: draft.savedAt,
+      fieldValues: isStringRecord(draft.fieldValues) ? draft.fieldValues : {},
+      qty: typeof draft.qty === "object" && draft.qty !== null
+        ? Object.fromEntries(Object.entries(draft.qty).filter(([, amount]) =>
+            typeof amount === "number" && Number.isInteger(amount) && amount > 0))
+        : {},
+      selectedOptions: isStringRecord(draft.selectedOptions) ? draft.selectedOptions : {},
+      activeSection: typeof draft.activeSection === "number" ? draft.activeSection : null,
+      sectionSearch: typeof draft.sectionSearch === "string" ? draft.sectionSearch : "",
+      comment: typeof draft.comment === "string" ? draft.comment : "",
+      shopCodeInput: typeof draft.shopCodeInput === "string" ? draft.shopCodeInput : "",
+      whenLater: draft.whenLater === true,
+      day: typeof draft.day === "string" ? draft.day : "",
+      time: typeof draft.time === "string" ? draft.time : defaultTime(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Standard template fields — inka label bhasha ke saath toggle hota hai.
 // Admin ke apne banaye custom fields ka label jaisa hai waisa rehta hai.
 // Ye Set isliye hai taaki O(1) me check ho sake koi field key standard hai ya nahi.
@@ -34,6 +88,8 @@ export default function OrderPage() {
   // Query string se ?shop=ABC123 nikalo — ye shop ka unique code hai
   const [searchParams] = useSearchParams();
   const shopCode: string = searchParams.get("shop") ?? "";
+  const draftKey = `queueflow.order-draft.${encodeURIComponent(shopCode || "unknown")}.${encodeURIComponent(sectionCode)}`;
+  const [initialDraft] = useState<OrderDraft | null>(() => readOrderDraft(draftKey));
 
   // Page navigation ke liye — order place hone ke baad /track/:id pe jaana hai
   const navigate: NavigateFunction = useNavigate();
@@ -54,24 +110,26 @@ export default function OrderPage() {
 
   // fieldValues: Har form field ki current value — key = field.key, value = user input
   // Example: { name: "Rahul", phone: "9876543210", table: "5" }
-  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => initialDraft?.fieldValues ?? {});
 
   // qty: Har catalog item ki selected quantity — key = item.id, value = quantity number
   // Example: { 3: 2, 7: 1 } means item 3 ki qty 2 hai, item 7 ki qty 1
-  const [qty, setQty] = useState<Record<number, number>>({});
+  const [qty, setQty] = useState<Record<number, number>>(() => initialDraft?.qty ?? {});
+  const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>(() => initialDraft?.selectedOptions ?? {});
+  const draftRestored = initialDraft !== null;
 
   // activeSection: customer ne upar jo service section (tab) chuna hai — null = "All" dikhao.
   // Admin ne jo sections banaye hain (e.g. "Pizza", "Burgers") unke hisaab se items filter hote hain.
-  const [activeSection, setActiveSection] = useState<number | null>(null);
+  const [activeSection, setActiveSection] = useState<number | null>(() => initialDraft?.activeSection ?? null);
 
   // sectionSearch: section tabs lambe ho jaane par naam se dhundne ke liye
-  const [sectionSearch, setSectionSearch] = useState("");
+  const [sectionSearch, setSectionSearch] = useState(() => initialDraft?.sectionSearch ?? "");
 
   // comment: Customer ka optional note/comment for the order
-  const [comment, setComment] = useState<string>("");
+  const [comment, setComment] = useState<string>(() => initialDraft?.comment ?? "");
 
   // shopCodeInput: Shop code input field ki value — QR se aaye to pre-fill hoga
-  const [shopCodeInput, setShopCodeInput] = useState<string>(shopCode);
+  const [shopCodeInput, setShopCodeInput] = useState<string>(shopCode || initialDraft?.shopCodeInput || "");
 
   // submitting: True hota hai jab API call chal rahi ho — duplicate submit rokne ke liye
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -85,7 +143,7 @@ export default function OrderPage() {
   // -----------------------------------------------------------------
 
   // whenLater: False = "Abhi order karo", True = "Schedule karo future ke liye"
-  const [whenLater, setWhenLater] = useState<boolean>(false);
+  const [whenLater, setWhenLater] = useState<boolean>(() => initialDraft?.whenLater ?? false);
 
   // dayOptions: Is hafte ke available days ki list — shop ke operating days ke hisab se
   // useMemo isliye use kiya taaki config change hone par hi recalculate ho, har render par nahi
@@ -98,10 +156,10 @@ export default function OrderPage() {
   const firstEnabledDay: string = dayOptions.find((d: DayOption): boolean => !d.disabled)?.value ?? "";
 
   // day: Schedule ke liye selected day (date string)
-  const [day, setDay] = useState(firstEnabledDay);
+  const [day, setDay] = useState(() => initialDraft?.day || firstEnabledDay);
 
   // time: Schedule ke liye selected time (HH:MM format) — defaultTime() current time ke paas koi round value return karta hai
-  const [time, setTime] = useState(defaultTime());
+  const [time, setTime] = useState(() => initialDraft?.time || defaultTime());
 
   // -----------------------------------------------------------------
   // INITIAL DATA FETCH
@@ -115,6 +173,31 @@ export default function OrderPage() {
       .then(setConfig)
       .catch((): void => setError(t("order.sectionNotFound")));
   }, [sectionCode, t]);
+
+  useEffect((): void => {
+    if (!config) return;
+    const draft: OrderDraft = {
+      savedAt: Date.now(),
+      fieldValues,
+      qty: Object.fromEntries(Object.entries(qty)),
+      selectedOptions: Object.fromEntries(Object.entries(selectedOptions)),
+      activeSection,
+      sectionSearch,
+      comment,
+      shopCodeInput,
+      whenLater,
+      day,
+      time,
+    };
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+    } catch {
+      // Draft persistence is best-effort when browser storage is unavailable or full.
+    }
+  }, [
+    config, draftKey, fieldValues, qty, selectedOptions,
+    activeSection, sectionSearch, comment, shopCodeInput, whenLater, day, time,
+  ]);
 
   // -----------------------------------------------------------------
   // EARLY RETURNS — loading aur error states
@@ -135,16 +218,33 @@ export default function OrderPage() {
 
   // Customer ka phone number — "phone" field ki value
   const customerPhone: string = fieldValues["phone"] ?? "";
+  const activeSectionId = config.sections.some((section) => section.id === activeSection) ? activeSection : null;
 
   // selectedItems: Sirf wo items jinki qty > 0 hai — API payload ke liye format me
-  const selectedItems: { catalogItemId: number; quantity: number }[] = Object.entries(qty)
-    .filter(([, q]: [string, number]): boolean => q > 0)
-    .map(([id, q]: [string, number]): { catalogItemId: number; quantity: number } => ({ catalogItemId: Number(id), quantity: q }));
+  const visibleQty = (item: CatalogItemDto): number => {
+    const optionName = selectedOptions[item.id];
+    if (item.options?.length && !item.options.some((option) => option.name === optionName)) return 0;
+    return qty[item.id] ?? 0;
+  };
+  const selectedItems: { catalogItemId: number; quantity: number; optionName?: string }[] = config.items
+    .flatMap((item: CatalogItemDto) => {
+      const quantity = visibleQty(item);
+      if (quantity <= 0) return [];
+      const optionName = selectedOptions[item.id];
+      return [{
+        catalogItemId: item.id,
+        quantity,
+        ...(optionName ? { optionName } : {}),
+      }];
+    });
 
   // Live total — selected items ka price * qty
   // Har item ka price uski quantity se multiply karke sab add karo
   const orderTotal: number = config.items.reduce(
-    (sum: number, item: CatalogItemDto): number => sum + (qty[item.id] ?? 0) * item.price,
+    (sum: number, item: CatalogItemDto): number => {
+      const selectedOption = item.options?.find((option) => option.name === selectedOptions[item.id]);
+      return sum + visibleQty(item) * (selectedOption?.price ?? item.price);
+    },
     0
   );
 
@@ -175,6 +275,7 @@ export default function OrderPage() {
   // submit(): User jab "Place Order" button dabata hai tab ye function chalti hai.
   // Ye API ko ticket create karne ka request bhejti hai aur success par /track page pe redirect karti hai.
   async function submit(): Promise<void> {
+    if (!config) return;
     // Device anti-spam — cooldown + window limit
     // Agar user ne recently order diya hai (cooldown period) to rok do
     if (inOrderCooldown()) {
@@ -192,12 +293,17 @@ export default function OrderPage() {
     try {
       // Agar "Later" selected hai aur din+time dono hain to ISO format me convert karo, warna null
       const scheduledFor: string | null = whenLater && day && time ? toIsoInstant(day, time) : null;
+      const currentFieldValues = Object.fromEntries(
+        config.fields
+          .filter((field) => Object.hasOwn(fieldValues, field.key))
+          .map((field) => [field.key, fieldValues[field.key]])
+      );
 
       // API call — naya ticket create karo server pe
       const ticket: TicketDto = await createTicket(sectionCode, {
         customerName,
         customerPhone,
-        fieldValues,
+        fieldValues: currentFieldValues,
         items: selectedItems,
         scheduledFor,
         comment: comment.trim() || null, // Empty string ko null bhejo
@@ -205,23 +311,36 @@ export default function OrderPage() {
       });
 
       // Order place hone ka timestamp mark karo (cooldown start ke liye)
-      markOrderPlaced();
+      try {
+        markOrderPlaced();
+      } catch {
+        // Local anti-spam storage must not block confirmation of a server-created order.
+      }
+      try {
+        localStorage.removeItem(draftKey);
+      } catch {
+        // The successful order must still proceed if browser storage is unavailable.
+      }
 
       // device history ke liye order save karo (taaki bina phone ke bhi dikhe)
       // LocalStorage me order save karo taaki /orders page pe dikhaye bina login ke
       if (shopCode && config) {
-        pushLocalOrder({
-          ticketId: ticket.id,
-          trackingToken: ticket.trackingToken,
-          shopCode,
-          sectionCode,
-          sectionName: config.businessName,
-          placedTime: ticket.placedTime,
-        });
+        try {
+          pushLocalOrder({
+            ticketId: ticket.id,
+            trackingToken: ticket.trackingToken,
+            shopCode,
+            sectionCode,
+            sectionName: config.businessName,
+            placedTime: ticket.placedTime,
+          });
+        } catch {
+          // Local order history is optional; the server-created order can still be tracked.
+        }
       }
 
       // Success! Ticket tracking page pe redirect karo
-      navigate(`/track/${ticket.trackingToken}`);
+      navigate(`/track/${ticket.trackingToken}`, { state: { orderJustPlaced: true } });
     } catch (e: unknown) {
       // Server se aaye HTTP status code aur error message nikalo
       const status: number | undefined = (e as { response?: { status?: number; data?: { error?: string; message?: string } } })?.response?.status;
@@ -253,11 +372,16 @@ export default function OrderPage() {
       <CustomerHeader shopCode={shopCode} />
 
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
+        {draftRestored && (
+          <p className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-900" role="status">
+            {t("order.draftRestored")}
+          </p>
+        )}
 
         {/* ------------------------------------------------------------------ */}
         {/* SHOP INFO SECTION — Shop ka naam, city, aur contact details dikhata hai */}
         {/* ------------------------------------------------------------------ */}
-        <div className="mb-6 rounded-[28px] bg-gradient-to-r from-brand via-indigo-600 to-violet-600 p-5 text-white shadow-[0_18px_45px_rgba(79,70,229,0.24)]">
+        <div className="mb-6 rounded-2xl bg-slate-900 p-5 text-white shadow-sm">
           <div className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-100">{config.industryType}</div>
           <h1 className="mt-2 text-3xl font-bold">{config.businessName}</h1>
           {/* Agar shopName alag hai (parent shop) to woh aur city dikhao */}
@@ -372,7 +496,7 @@ export default function OrderPage() {
                   <button
                     onClick={(): void => setActiveSection(null)}
                     className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-all ${
-                      activeSection === null
+                      activeSectionId === null
                         ? "bg-brand text-white border-brand"
                         : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
                     }`}
@@ -390,7 +514,7 @@ export default function OrderPage() {
                         key={s.id}
                         onClick={(): void => setActiveSection(s.id)}
                         className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition-all ${
-                          activeSection === s.id
+                          activeSectionId === s.id
                             ? "bg-brand text-white border-brand"
                             : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
                         }`}
@@ -409,6 +533,10 @@ export default function OrderPage() {
                 // Helper: ek item ki quantity update karo (ItemRow ka onChange isi ko call karta hai)
                 const setItemQty = (id: number, q: number): void =>
                   setQty((prev: Record<number, number>) => ({ ...prev, [id]: q }));
+                const setItemOption = (id: number, optionName: string): void => {
+                  setSelectedOptions((prev) => ({ ...prev, [id]: optionName }));
+                  if (!optionName) setItemQty(id, 0);
+                };
 
                 // Agar admin ne koi service section banaya hi nahi hai, to purani
                 // category-based grouping use karo — backward compatible rehta hai.
@@ -424,7 +552,9 @@ export default function OrderPage() {
                       {cat && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{cat}</p>}
                       <div className="space-y-2">
                         {groupItems.map((item: CatalogItemDto) => (
-                          <ItemRow key={item.id} item={item} qty={qty[item.id] ?? 0}
+                          <ItemRow key={item.id} item={item} qty={visibleQty(item)}
+                            selectedOption={selectedOptions[item.id] ?? ""}
+                            onOptionChange={(optionName): void => setItemOption(item.id, optionName)}
                             onChange={(q: number): void => setItemQty(item.id, q)} />
                         ))}
                       </div>
@@ -434,9 +564,9 @@ export default function OrderPage() {
 
                 // Sections ke hisaab se items dikhao. "All" selected ho to sab sections
                 // apne headings ke saath dikhte hain; ek section select karne par sirf wahi.
-                const itemsToShow: CatalogItemDto[] = activeSection === null
+                const itemsToShow: CatalogItemDto[] = activeSectionId === null
                   ? config.items
-                  : config.items.filter((it: CatalogItemDto): boolean => it.serviceSectionId === activeSection);
+                  : config.items.filter((it: CatalogItemDto): boolean => it.serviceSectionId === activeSectionId);
 
                 // Items ko unke section ke naam ke hisaab se group karo.
                 // Jis item ka section nahi mila (ya null hai) wo Uncategorized mein jaata hai.
@@ -458,7 +588,9 @@ export default function OrderPage() {
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{name}</p>
                     <div className="space-y-2">
                       {groupItems.map((item: CatalogItemDto) => (
-                        <ItemRow key={item.id} item={item} qty={qty[item.id] ?? 0}
+                        <ItemRow key={item.id} item={item} qty={visibleQty(item)}
+                          selectedOption={selectedOptions[item.id] ?? ""}
+                          onOptionChange={(optionName): void => setItemOption(item.id, optionName)}
                           onChange={(q: number): void => setItemQty(item.id, q)} />
                       ))}
                     </div>
@@ -574,7 +706,7 @@ export default function OrderPage() {
           {/* Submitting ho to "Placing..." dikhao, warna "Place Order · ₹total" */}
           {submitting
             ? t("order.placing")
-            : `${whenLater ? t("order.scheduleBtn") : t("order.placeBtn")}${orderTotal > 0 ? ` · ₹${orderTotal}` : ""}`}
+            : `${whenLater ? t("order.scheduleBtn") : t("order.placeBtn")}${payableTotal > 0 ? ` · ₹${payableTotal}` : ""}`}
         </Button>
 
         {/* Required fields nahi bhare to hint dikhao submit button ke neeche */}
@@ -599,12 +731,17 @@ export default function OrderPage() {
 function ItemRow({
   item,
   qty,
+  selectedOption,
+  onOptionChange,
   onChange,
 }: {
   item: CatalogItemDto;
   qty: number;
+  selectedOption: string;
+  onOptionChange: (optionName: string) => void;
   onChange: (q: number) => void;
 }) {
+  const options = item.options ?? [];
   return (
     <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/95 px-3 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_14px_30px_rgba(79,70,229,0.08)]">
       {/* Item ki left side info — naam, price, avg time, description */}
@@ -612,7 +749,9 @@ function ItemRow({
         <div className="font-semibold text-gray-800 leading-tight">{item.name}</div>
         {/* Price aur estimated time — price 0 ho to dash dikhao */}
         <div className="text-xs text-gray-500 mt-1">
-          {item.price > 0 ? `₹${item.price}` : "-"} · ~{item.avgMinutes} min
+          {options.length > 0
+            ? `From ₹${Math.min(...options.map((option) => option.price))}`
+            : item.price > 0 ? `₹${item.price}` : "-"} · ~{item.avgMinutes} min
         </div>
         {/* Optional description — sirf tab dikhao jab ho */}
         {item.description && (
@@ -622,8 +761,24 @@ function ItemRow({
 
       {/* Quantity controls — Minus button, current count, Plus button */}
       <div className="flex items-center gap-2.5 shrink-0">
+        {options.length > 0 && (
+          <select
+            value={selectedOption}
+            onChange={(event): void => onOptionChange(event.target.value)}
+            className="max-w-32 rounded-lg border border-gray-200 px-2 py-1.5 text-sm"
+            aria-label={`Choose ${item.name} option`}
+          >
+            <option value="">Choose option</option>
+            {options.map((option) => (
+              <option key={option.name} value={option.name}>
+                {option.name} · ₹{option.price}
+              </option>
+            ))}
+          </select>
+        )}
         {/* Minus button — 0 se neeche nahi jaayega (Math.max se ensure) */}
         <button
+          disabled={qty === 0}
           className="h-8 w-8 rounded-full bg-gray-100 text-lg leading-none text-gray-700 shadow-inner transition hover:bg-gray-200"
           onClick={(): void => onChange(Math.max(0, qty - 1))}
         >
@@ -633,6 +788,7 @@ function ItemRow({
         <span className="w-6 text-center text-sm font-semibold text-gray-700">{qty}</span>
         {/* Plus button — brand color me (usually orange/primary color) */}
         <button
+          disabled={options.length > 0 && !selectedOption}
           className="h-8 w-8 rounded-full bg-brand text-white text-lg leading-none shadow-sm transition hover:bg-brand-dark"
           onClick={(): void => onChange(qty + 1)}
         >

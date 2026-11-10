@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   addSection,
   assignStaffSections,
@@ -38,6 +38,7 @@ import { useT } from "../i18n/LanguageContext";
 import LanguageToggle from "../components/LanguageToggle";
 import AdminPushSettings from "../components/AdminPushSettings";
 import { disableAdminPushNotifications } from "../lib/pushNotifications";
+import { useStomp } from "../hooks/useStomp";
 
 // Section industryType -> left border color class
 const SECTION_BORDER: Record<string, string> = {
@@ -50,11 +51,28 @@ const SECTION_BORDER: Record<string, string> = {
   OTHER: "border-l-4 border-l-slate-400",
 };
 
+const ADMIN_TABS = ["overview", "services", "staff", "settings", "history", "support"] as const;
+type AdminTab = (typeof ADMIN_TABS)[number];
+
+function isAdminTab(tab: string | null): tab is AdminTab {
+  return ADMIN_TABS.some((candidate) => candidate === tab);
+}
+
 export default function AdminPage() {
   const { shopCode = "" } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const auth = getAuth();
   const t = useT();
+  const tabParam = searchParams.get("tab");
+  const adminTab: AdminTab = isAdminTab(tabParam) ? tabParam : "overview";
+
+  function changeAdminTab(tab: AdminTab): void {
+    setSearchParams((current) => {
+      current.set("tab", tab);
+      return current;
+    });
+  }
 
   const [overview, setOverview] = useState<AdminOverviewDto | null>(null);
   const [history, setHistory] = useState<HistoryDto | null>(null);
@@ -151,9 +169,6 @@ export default function AdminPage() {
   // delete staff
   const [deleteStaffMsg, setDeleteStaffMsg] = useState<string | null>(null);
 
-  // Tab navigation
-  const [adminTab, setAdminTab] = useState<"overview" | "services" | "staff" | "settings" | "history" | "support">("overview");
-
 //   const refresh = useCallback(() => {
 //     Promise.all([getAdminOverview(), getAdminHistory(), getStaffUsers(), getShopDetails(), getPlatformConfig()])
 //       .then(([o, h, st, sd, cfg]) => {
@@ -226,6 +241,20 @@ export default function AdminPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  const refreshOverview = useCallback((): void => {
+    getAdminOverview()
+      .then(setOverview)
+      .catch((error: unknown): void => console.error("Failed to refresh admin overview:", error));
+  }, []);
+
+  useStomp(
+    overview?.sections.map((section: SectionStatsDto): string =>
+      `/topic/business/${section.sectionCode}/queue`
+    ) ?? [],
+    refreshOverview,
+    refreshOverview
+  );
 
   //Shop ke paas pehle se uploaded payment QR hai toh preview load karo (ek baar)
   useEffect(() => {
@@ -633,7 +662,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
+    <div className="admin-dashboard mx-auto min-h-screen max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
       {/* Save success toast */}
       {shopDetailMsg && shopDetailMsg.includes("✓") && (
         <div className="fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-medium text-white shadow-lg">
@@ -642,20 +671,19 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Gradient header — always visible */}
-      <div className="rounded-[28px] bg-gradient-to-r from-brand via-indigo-600 to-violet-600 px-5 pb-4 pt-5 text-white shadow-[0_18px_45px_rgba(79,70,229,0.22)]">
+      <div className="rounded-2xl border border-slate-800 border-l-4 border-l-brand bg-slate-900 px-5 py-4 text-white shadow-[0_10px_28px_rgba(15,23,42,0.18)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-100">Admin Workspace</p>
-            <h1 className="mt-2 text-3xl font-bold">{overview?.shopName ?? shopCode}</h1>
-            <p className="mt-1 text-sm text-indigo-100">{t("admin.adminRole")}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-200">Admin dashboard</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">{overview?.shopName ?? shopCode}</h1>
+            <p className="mt-1 text-sm text-slate-300">{t("admin.adminRole")}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={refresh} className="border-white/20 bg-white/10 text-white hover:bg-white/15">
+            <Button variant="ghost" onClick={refresh}>
               {t("common.refresh")}
             </Button>
             {auth && (
-              <Button variant="ghost" onClick={logout} className="border-white/20 bg-white/10 text-white hover:bg-white/15">
+              <Button variant="ghost" onClick={logout}>
                 {t("common.logout")}
               </Button>
             )}
@@ -670,11 +698,8 @@ export default function AdminPage() {
         {/* ── OVERVIEW TAB ── */}
         {adminTab === "overview" && (
           <>
-            <TabInfo icon="🏠" title={t("admin.tabInfoOverviewTitle")}
-              color="indigo" bullets={[t("admin.tabInfoOverview1"), t("admin.tabInfoOverview2"),
-                t("admin.tabInfoOverview3"), t("admin.tabInfoOverview4")]} />
             {/* Shop code + Live/Offline toggle + QR */}
-            <Card className="mb-4 border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/60">
+            <Card className="mb-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <div className="text-xs text-gray-400 uppercase tracking-wide">{t("admin.shopCode")}</div>
@@ -691,7 +716,7 @@ export default function AdminPage() {
                     )}
                     {shopDetail?.plan === "BASIC" && (
                       <button onClick={() => setShowUpgradeModal(true)}
-                        className="text-xs bg-gradient-to-r from-brand to-indigo-500 text-white px-2.5 py-1 rounded-full font-semibold hover:opacity-90 transition">
+                        className="rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-dark transition">
                         {t("admin.upgradeToPaid")} ✨
                       </button>
                     )}
@@ -797,11 +822,10 @@ export default function AdminPage() {
 
             {/* BASIC upgrade CTA */}
             {shopDetail?.plan === "BASIC" && shopDetail?.tierSystemEnabled && (
-              <Card className="mb-4 border border-amber-200 bg-gradient-to-br from-amber-50 to-white py-4 text-center">
+              <Card className="mb-4 border border-slate-200 bg-white py-4 text-center">
                 <p className="text-sm font-semibold text-amber-700 mb-2">✨ {t("admin.upgradeToPaid")}</p>
                 <button onClick={() => setShowUpgradeModal(true)}
-                  className="text-sm bg-gradient-to-r from-brand to-indigo-500
-                    text-white px-4 py-2 rounded-full font-semibold hover:opacity-90 transition">
+                  className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark transition">
                   {t("admin.basicUpgradeLink")}
                 </button>
               </Card>
@@ -1399,28 +1423,28 @@ export default function AdminPage() {
           </div>{/* end pb-20 content area */}
 
           {/* ── BOTTOM TAB BAR ── */}
-          <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-lg">
-            <div className="max-w-3xl mx-auto grid grid-cols-6">
+          <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 shadow-[0_-4px_16px_rgba(15,23,42,0.06)] backdrop-blur">
+            <div className="mx-auto grid max-w-3xl grid-cols-6 gap-1 px-2 py-1">
               {(
                 [
-                  { key: "overview", emoji: "🏠", label: "Overview" },
-                  { key: "services", emoji: "⚙️", label: "Services" },
-                  { key: "staff", emoji: "👥", label: "Staff" },
-                  { key: "settings", emoji: "📋", label: "Settings" },
-                  { key: "history", emoji: "📜", label: "History" },
-                  { key: "support", emoji: "💬", label: "Support" },
+                  { key: "overview", icon: "🏠", label: "Overview" },
+                  { key: "services", icon: "⚙️", label: "Services" },
+                  { key: "staff", icon: "👥", label: "Staff" },
+                  { key: "settings", icon: "📋", label: "Settings" },
+                  { key: "history", icon: "📜", label: "History" },
+                  { key: "support", icon: "💬", label: "Support" },
                 ] as const
-              ).map(({ key, emoji, label }) => (
+              ).map(({ key, icon, label }) => (
                 <button
                   key={key}
-                  onClick={() => setAdminTab(key)}
-                  className={`flex flex-col items-center justify-center py-2 px-1 text-xs font-medium transition-colors ${
+                  onClick={() => changeAdminTab(key)}
+                  className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors sm:min-h-[52px] sm:flex-row sm:gap-2 sm:px-3 sm:text-xs ${
                     adminTab === key
-                      ? "bg-indigo-600 text-white rounded-xl mx-1 my-1"
-                      : "text-gray-500 hover:text-gray-700"
+                      ? "bg-brand text-white shadow-sm hover:bg-brand-dark"
+                      : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
                   }`}
                 >
-                  <span className="text-base leading-none mb-0.5">{emoji}</span>
+                  <span className="text-base leading-none" aria-hidden="true">{icon}</span>
                   <span>{label}</span>
                 </button>
               ))}
@@ -1770,16 +1794,16 @@ export default function AdminPage() {
       icon: string; title: string; bullets: string[]; color?: string;
     }) {
       const bg: Record<string, string> = {
-        indigo: "bg-indigo-50 border-indigo-100 text-indigo-800",
-        teal: "bg-teal-50 border-teal-100 text-teal-800",
-        slate: "bg-slate-50 border-slate-200 text-slate-700",
-        amber: "bg-amber-50 border-amber-100 text-amber-800",
-        violet: "bg-violet-50 border-violet-100 text-violet-800",
-        gray: "bg-gray-50 border-gray-200 text-gray-600",
+        indigo: "bg-indigo-50 border-indigo-200 text-indigo-900",
+        teal: "bg-teal-50 border-teal-200 text-teal-900",
+        slate: "bg-slate-100 border-slate-300 text-slate-800",
+        amber: "bg-amber-50 border-amber-200 text-amber-900",
+        violet: "bg-violet-50 border-violet-200 text-violet-900",
+        gray: "bg-gray-100 border-gray-300 text-gray-700",
       };
       const cls: string = bg[color] ?? bg.indigo;
       return (
-        <div className={`mb-4 rounded-2xl border px-4 py-3 ${cls}`}>
+        <div className={`mb-4 rounded-2xl border px-4 py-3 shadow-sm ${cls}`}>
           <p className="font-semibold text-sm mb-1.5">{icon} {title}</p>
           <ul className="space-y-0.5">
             {bullets.map((b, i) => (

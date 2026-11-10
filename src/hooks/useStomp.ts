@@ -42,7 +42,13 @@ import { WS_URL } from "../lib/config";
 //          nahi karta. Effect cleanup mein connection automatically band hota
 //          hai jab component unmount ho.
 // =====================================================================
-export function useStomp(topic: string, onMessage: (body: any) => void, onConnected?: () => void): void {
+export function useStomp<T = unknown>(
+    topic: string | string[],
+    onMessage: (body: T) => void,
+    onConnected?: () => void
+): void {
+    const topics = (Array.isArray(topic) ? topic : [topic]).filter(Boolean);
+    const topicsKey = JSON.stringify(topics);
 
     // useRef se hum `onMessage` callback ka ek "box" banate hain.
     // cbRef.current hamesha latest callback function ko point karta hai.
@@ -50,20 +56,21 @@ export function useStomp(topic: string, onMessage: (body: any) => void, onConnec
     // capture ho sakta hai – agar directly `onMessage` use karte to har render
     // pe effect re-run hota. Ref ke through latest function milta hai bina
     // effect dobara chalaye.
-    const cbRef: React.MutableRefObject<(body: any) => void> = useRef(onMessage);
+    const cbRef: React.MutableRefObject<(body: T) => void> = useRef(onMessage);
     const connectedCbRef: React.MutableRefObject<(() => void) | undefined> = useRef(onConnected);
+    const topicsRef: React.MutableRefObject<string[]> = useRef(topics);
 
-    // Har render pe cbRef.current ko latest `onMessage` se update karo.
-    // Isse guarantee milti hai ki jab bhi server message aaye, us waqt ka
-    // sabse fresh callback call ho – chahe parent component ne callback change
-    // kiya ho ya nahi.
-    cbRef.current = onMessage;
-    connectedCbRef.current = onConnected;
+    useEffect((): void => {
+        cbRef.current = onMessage;
+        connectedCbRef.current = onConnected;
+        topicsRef.current = topics;
+    }, [onMessage, onConnected, topicsKey, topics]);
 
     // useEffect: ye block tab run hota hai jab component mount ho YA jab
     // `topic` prop change ho. Topic change hone pe purana connection band
     // hota hai aur naye topic ke liye naya connection banta hai.
-    useEffect((): (() => void) => {
+    useEffect((): (() => void) | undefined => {
+        if (topicsRef.current.length === 0) return;
 
         // Naya STOMP Client object banao. Isme configuration options pass ki hain:
         const client = new Client({
@@ -84,20 +91,16 @@ export function useStomp(topic: string, onMessage: (body: any) => void, onConnec
             // hai, isliye subscription yahan hai – bahar nahi.
             onConnect: (): void => {
 
-                // Ab connected hain, isliye `topic` pe subscribe karo.
-                // `client.subscribe(topic, callback)` – server jab bhi is topic pe
-                // message publish karega, ye callback call hogi.
-                client.subscribe(topic, (msg: IMessage): void => {
-                    try {
-                        // msg.body ek raw string hota hai. JSON.parse se use JavaScript
-                        // object mein convert karo taaki component easily use kar sake.
-                        cbRef.current(JSON.parse(msg.body));
-                    } catch {
-                        // Agar JSON parse fail ho (e.g. server ne plain text bheja), to
-                        // raw string hi pass kar do – crash mat karo.
-                        cbRef.current(msg.body);
-                    }
-                });
+                // Subscribe to every requested topic on each connection/reconnection.
+                for (const destination of topicsRef.current) {
+                    client.subscribe(destination, (msg: IMessage): void => {
+                        try {
+                            cbRef.current(JSON.parse(msg.body) as T);
+                        } catch {
+                            cbRef.current(msg.body as T);
+                        }
+                    });
+                }
                 connectedCbRef.current?.();
             },
         });
@@ -120,5 +123,5 @@ export function useStomp(topic: string, onMessage: (body: any) => void, onConnec
         // Dependency array: [topic] – sirf jab `topic` string change ho tab hi
         // effect dobara run ho. `onMessage` yahan nahi hai kyunki hum cbRef trick
         // use kar rahe hain – isse unnecessary reconnects avoid hote hain.
-    }, [topic]);
+    }, [topicsKey]);
 }

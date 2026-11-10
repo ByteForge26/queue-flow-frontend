@@ -63,6 +63,11 @@ export interface FieldValueDto {
 
 // CatalogItemDto: Shop ke menu/catalog mein ek item (service ya product).
 // Customer booking ke waqt in items mein se select kar sakta hai.
+export interface CatalogItemOptionDto {
+  name: string;
+  price: number;
+}
+
 export interface CatalogItemDto {
   id: number;
   name: string; // Item ka naam (e.g., "Haircut", "Oil Change")
@@ -71,6 +76,7 @@ export interface CatalogItemDto {
   description: string | null; // Optional description - null agar koi description nahi
   category: string | null; // Optional category grouping (e.g., "Beverages", "Services")
   serviceSectionId: number | null; // Agar multi-section hai toh kaunsa section ye item belong karta hai
+  options: CatalogItemOptionDto[]; // Item-specific prices; empty means use the item's single price
 }
 
 // FormConfigDto: Ek shop ka poora booking form configuration - public API se milta hai.
@@ -116,6 +122,7 @@ export interface MenuItemDto {
   description: string | null;
   category: string | null;
   serviceSectionId?: number | null; // Agar multi-section hai toh kaunsa section ye item belong karta hai
+  options: CatalogItemOptionDto[];
 }
 
 // MenuItemCommand: Naya menu item create ya existing update karne ka request body.
@@ -127,6 +134,7 @@ export interface MenuItemCommand {
   description?: string | null; // Optional - nahi diya toh backend default use karega
   category?: string | null; // Optional - nahi diya toh uncategorized rahega
   serviceSectionId?: number | null; // Agar multi-section hai toh kaunsa section ye item belong karta hai
+  options?: CatalogItemOptionDto[]; // Empty array clears options; omit to preserve existing options
 }
 
 // ServiceSectionDto: Menu items ko organize karne ke liye subsections (e.g., "Pizza", "Burgers").
@@ -207,6 +215,7 @@ export interface DashboardStatsDto {
 export interface ItemSelection {
   catalogItemId: number; // CatalogItemDto ka id - kaunsa item select kiya
   quantity: number; // Kitna quantity chahiye
+  optionName?: string; // Selected item-specific price option, if the item has options
 }
 
 // CreateTicketCommand: Naya ticket create karne ka request body - backend ko bheja jaata hai.

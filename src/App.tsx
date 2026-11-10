@@ -113,7 +113,8 @@ import { listenForPushNotifications } from "./lib/pushNotifications";
 // Isko main.tsx mein render kiya jaata hai.
 // Iska koi apna state ya props nahi hain – sirf routes define karta hai.
 export default function App() {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
 
   useEffect(() => {
     // Keep foreground push handling mounted across all customer, staff, and admin routes.
@@ -158,7 +159,7 @@ export default function App() {
       {/* Step 3: Customer kisi section ko choose karta hai aur order deta hai
           ":sectionCode" us specific section ka unique code hai
           Example URL: /order/haircut-section-42 */}
-      <Route path="/order/:sectionCode" element={<OrderPage />} />
+      <Route path="/order/:sectionCode" element={<OrderPage key={`${pathname}${location.search}`} />} />
 
       {/* Step 4: Order dene ke baad customer apna token track karta hai
           ":ticketId" us specific token/ticket ka ID hai

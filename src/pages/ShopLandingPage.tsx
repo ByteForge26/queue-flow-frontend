@@ -63,6 +63,47 @@ export default function ShopLandingPage() {
 
   // STATE: agar API call fail ho (shop not found ya network error), toh error message store hota hai
   const [error, setError] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState("");
+
+  async function shareShop(): Promise<void> {
+    const url = window.location.href;
+    setShareStatus("");
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shop?.name, url });
+        setShareStatus(t("shop.shareDone"));
+        return;
+      } catch (shareError: unknown) {
+        if (shareError instanceof DOMException && shareError.name === "AbortError") return;
+      }
+    }
+
+    try {
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+        await navigator.clipboard.writeText(url);
+      } catch {
+        const input = document.createElement("textarea");
+        input.value = url;
+        input.setAttribute("readonly", "");
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.select();
+        let copied = false;
+        try {
+          copied = document.execCommand("copy");
+        } finally {
+          input.remove();
+        }
+        if (!copied) throw new Error("Copy command failed");
+      }
+      setShareStatus(t("shop.linkCopied"));
+    } catch {
+      setShareStatus(t("shop.shareFailed"));
+    }
+  }
 
   // EFFECT: Component mount hone par ya shopCode/t change hone par chalega
   // Kaam: shopCode ke basis pe backend se shop ki detail fetch karta hai
@@ -89,7 +130,7 @@ export default function ShopLandingPage() {
 
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="premium-shell mx-auto max-w-3xl overflow-hidden p-5 sm:p-6">
-          <div className="mb-6 rounded-[26px] bg-gradient-to-r from-slate-900 via-indigo-900 to-brand p-5 text-white shadow-xl shadow-indigo-500/20">
+          <div className="mb-6 rounded-2xl bg-slate-900 p-5 text-white shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-[10px] uppercase tracking-[0.2em] text-indigo-100">Marketplace</div>
@@ -193,16 +234,17 @@ export default function ShopLandingPage() {
           </Link>
 
           <button
-            onClick={(): void => {
-              const url: string = window.location.href;
-              if (navigator.share) { navigator.share({ title: shop.name, url }); }
-              else { navigator.clipboard?.writeText(url); }
-            }}
+            onClick={(): void => { void shareShop(); }}
             className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-brand"
           >
             {t("shop.shareLink")}
           </button>
         </div>
+        {shareStatus && (
+          <p className="mt-3 text-center text-sm text-slate-600" role="status" aria-live="polite">
+            {shareStatus}
+          </p>
+        )}
         </div>
       </div>
     </>

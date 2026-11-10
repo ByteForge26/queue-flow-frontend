@@ -28,6 +28,8 @@ import {
 
 import type { MenuItemDto, ServiceSectionDto } from "../lib/types";
 
+type MenuOptionDraft = { name: string; price: string };
+
 export default function MenuPage(): JSX.Element {
   // URL se shopCode aur sectionCode nikal rahe hain.
   // shopCode: admin dashboard pe wapas jaane ke liye link mein use hoga.
@@ -104,6 +106,11 @@ export default function MenuPage(): JSX.Element {
 
   // cat: naye item ki optional category (e.g. "Starters", "Beverages")
   const [cat, setCat] = useState<string>("");
+  const [optionsEnabled, setOptionsEnabled] = useState<boolean>(false);
+  const [options, setOptions] = useState<MenuOptionDraft[]>([
+    { name: "", price: "" },
+    { name: "", price: "" },
+  ]);
 
   // --- "Item Edit" form ke liye state variables ---
 
@@ -127,6 +134,8 @@ export default function MenuPage(): JSX.Element {
 
   // eCat: edit form mein item ki category
   const [eCat, setECat] = useState<string>("");
+  const [eOptionsEnabled, setEOptionsEnabled] = useState<boolean>(false);
+  const [eOptions, setEOptions] = useState<MenuOptionDraft[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,13 +172,20 @@ export default function MenuPage(): JSX.Element {
   // addValid: "Add" button tab hi enable hoga jab naam diya ho,
   // price 0 ya zyada ho, aur estimated minutes kam se kam 1 ho.
   // Negative ya empty values block karta hai.
+  const optionsValid = (values: MenuOptionDraft[]): boolean =>
+    values.length >= 2 && values.every((option) =>
+      option.name.trim() !== "" && option.name.trim().length <= 100
+      && option.price !== "" && Number(option.price) >= 0
+    ) && new Set(values.map((option) => option.name.trim().toLowerCase())).size === values.length;
   const addValid: boolean =
-    name.trim() !== "" && Number(price) >= 0 && Number(mins) >= 1;
+    name.trim() !== "" && (optionsEnabled ? optionsValid(options) : price !== "" && Number(price) >= 0)
+    && Number(mins) >= 1;
 
   // editValid: "Save" button edit form mein tab hi enable hoga
   // jab naam, price aur mins valid ho
   const editValid: boolean =
-    eName.trim() !== "" && Number(ePrice) >= 0 && Number(eMins) >= 1;
+    eName.trim() !== "" && (eOptionsEnabled ? optionsValid(eOptions) : ePrice !== "" && Number(ePrice) >= 0)
+    && Number(eMins) >= 1;
 
   // Sidebar search: lowercase trimmed query, section filter ke liye
   const search: string = sectionSearch.trim().toLowerCase();
@@ -250,7 +266,7 @@ export default function MenuPage(): JSX.Element {
     try {
       await addMenuItem(sectionCode, {
         name: name.trim(),
-        price: Number(price),
+        price: optionsEnabled ? 0 : Number(price),
         avgMinutes: Number(mins),
 
         // description ya category empty string ho to null bhejo —
@@ -258,6 +274,10 @@ export default function MenuPage(): JSX.Element {
         description: desc.trim() || null,
         category: cat.trim() || null,
         serviceSectionId: selectedSectionId, // selected section mein add karo
+        options: optionsEnabled ? options.map((option) => ({
+          name: option.name.trim(),
+          price: Number(option.price),
+        })) : [],
       });
 
       // Item successfully add hua - form ke saare fields reset karo
@@ -266,6 +286,8 @@ export default function MenuPage(): JSX.Element {
       setMins("");
       setDesc("");
       setCat("");
+      setOptionsEnabled(false);
+      setOptions([{ name: "", price: "" }, { name: "", price: "" }]);
       refresh();
     } catch {
       setError(t("menu.addFailed"));
@@ -276,6 +298,7 @@ export default function MenuPage(): JSX.Element {
   // to is function se edit form open hota hai aur item ki current values
   // edit fields mein fill ho jaati hain
   function startEdit(it: MenuItemDto): void {
+    const itemOptions = it.options ?? [];
     setEditId(it.id);
     setEName(it.name);
     setEPrice(String(it.price));
@@ -285,6 +308,8 @@ export default function MenuPage(): JSX.Element {
     // ?? "" se empty string fallback dete hain
     setEDesc(it.description ?? "");
     setECat(it.category ?? "");
+    setEOptionsEnabled(itemOptions.length > 0);
+    setEOptions(itemOptions.map((option) => ({ name: option.name, price: String(option.price) })));
   }
 
   // saveEdit(): edit form ka "Save" button press karne par
@@ -301,12 +326,16 @@ export default function MenuPage(): JSX.Element {
     try {
       await updateMenuItem(editId, {
         name: eName.trim(),
-        price: Number(ePrice),
+        price: eOptionsEnabled ? 0 : Number(ePrice),
         avgMinutes: Number(eMins),
 
         // empty string ko null mein convert karo server ke liye
         description: eDesc.trim() || null,
         category: eCat.trim() || null,
+        options: eOptionsEnabled ? eOptions.map((option) => ({
+          name: option.name.trim(),
+          price: Number(option.price),
+        })) : [],
       });
 
       // Edit band karo — list mein wapas normal view aayega
@@ -399,7 +428,7 @@ export default function MenuPage(): JSX.Element {
             <div className="mb-2 flex items-center gap-1">
               <input
                 type="text"
-                placeholder="New..."
+                placeholder="New service section"
                 value={newSectionName}
                 onChange={(e: ChangeEvent<HTMLInputElement>): void =>
                   setNewSectionName(e.target.value)
@@ -509,14 +538,16 @@ export default function MenuPage(): JSX.Element {
                 className="sm:col-span-2 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
               />
 
-              <input
-                type="number"
-                min="0"
-                value={price}
-                placeholder={t("menu.price")}
-                onChange={(e: ChangeEvent<HTMLInputElement>): void => setPrice(e.target.value)}
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
-              />
+              {!optionsEnabled && (
+                <input
+                  type="number"
+                  min="0"
+                  value={price}
+                  placeholder={t("menu.price")}
+                  onChange={(e: ChangeEvent<HTMLInputElement>): void => setPrice(e.target.value)}
+                  className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
+                />
+              )}
 
               {/* min="1" — estimated time kam se kam 1 minute hona chahiye */}
               <input
@@ -545,6 +576,57 @@ export default function MenuPage(): JSX.Element {
                 className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
               />
             </div>
+
+            <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={optionsEnabled}
+                onChange={(e): void => setOptionsEnabled(e.target.checked)}
+              />
+              This item has different price options
+            </label>
+            {optionsEnabled && (
+              <div className="mt-2 space-y-2">
+                {options.map((option, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      value={option.name}
+                      maxLength={100}
+                      placeholder="Option name (e.g. Half, Full, Small)"
+                      onChange={(e): void => setOptions((prev) => prev.map((value, i) =>
+                        i === index ? { ...value, name: e.target.value } : value
+                      ))}
+                      className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      value={option.price}
+                      placeholder="Option price (₹)"
+                      onChange={(e): void => setOptions((prev) => prev.map((value, i) =>
+                        i === index ? { ...value, price: e.target.value } : value
+                      ))}
+                      className="w-32 border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                    />
+                    <button
+                      type="button"
+                      disabled={options.length <= 2}
+                      onClick={(): void => setOptions((prev) => prev.filter((_, i) => i !== index))}
+                      className="px-2 text-red-500 disabled:text-gray-300"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={(): void => setOptions((prev) => [...prev, { name: "", price: "" }])}
+                  className="text-sm text-brand hover:underline"
+                >
+                  + Add another price option
+                </button>
+              </div>
+            )}
 
             {/* Add button - addValid false ho to disabled rehta hai */}
             <Button onClick={add} disabled={!addValid} className="mt-3 w-full">
@@ -585,20 +667,25 @@ export default function MenuPage(): JSX.Element {
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-center">
                     <input
                       value={eName}
+                      placeholder="Item name"
                       onChange={(e: ChangeEvent<HTMLInputElement>): void => setEName(e.target.value)}
                       className="sm:col-span-2 border border-gray-200 rounded-xl px-3 py-2 text-sm"
                     />
-                    <input
-                      type="number"
-                      min="0"
-                      value={ePrice}
-                      onChange={(e: ChangeEvent<HTMLInputElement>): void => setEPrice(e.target.value)}
-                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm"
-                    />
+                    {!eOptionsEnabled && (
+                      <input
+                        type="number"
+                        min="0"
+                        value={ePrice}
+                        placeholder="Price (₹)"
+                        onChange={(e: ChangeEvent<HTMLInputElement>): void => setEPrice(e.target.value)}
+                        className="border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                      />
+                    )}
                     <input
                       type="number"
                       min="1"
                       value={eMins}
+                      placeholder="Estimated time (minutes)"
                       onChange={(e: ChangeEvent<HTMLInputElement>): void => setEMins(e.target.value)}
                       className="border border-gray-200 rounded-xl px-3 py-2 text-sm"
                     />
@@ -614,6 +701,63 @@ export default function MenuPage(): JSX.Element {
                       onChange={(e: ChangeEvent<HTMLInputElement>): void => setECat(e.target.value)}
                       className="sm:col-span-2 border border-gray-200 rounded-xl px-3 py-2 text-sm"
                     />
+
+                    <label className="sm:col-span-4 flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={eOptionsEnabled}
+                        onChange={(event): void => {
+                          const enabled = event.target.checked;
+                          setEOptionsEnabled(enabled);
+                          if (enabled && eOptions.length === 0) {
+                            setEOptions([{ name: "", price: "" }, { name: "", price: "" }]);
+                          }
+                        }}
+                      />
+                      This item has different price options
+                    </label>
+                    {eOptionsEnabled && (
+                      <div className="sm:col-span-4 space-y-2">
+                        {eOptions.map((option, index) => (
+                          <div key={index} className="flex gap-2">
+                            <input
+                              value={option.name}
+                              maxLength={100}
+                              placeholder="Option name (e.g. Half, Full, Small)"
+                              onChange={(event): void => setEOptions((prev) => prev.map((value, i) =>
+                                i === index ? { ...value, name: event.target.value } : value
+                              ))}
+                              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              value={option.price}
+                              placeholder="Option price (₹)"
+                              onChange={(event): void => setEOptions((prev) => prev.map((value, i) =>
+                                i === index ? { ...value, price: event.target.value } : value
+                              ))}
+                              className="w-32 border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                            />
+                            <button
+                              type="button"
+                              disabled={eOptions.length <= 2}
+                              onClick={(): void => setEOptions((prev) => prev.filter((_, i) => i !== index))}
+                              className="px-2 text-red-500 disabled:text-gray-300"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={(): void => setEOptions((prev) => [...prev, { name: "", price: "" }])}
+                          className="text-sm text-brand hover:underline"
+                        >
+                          + Add another price option
+                        </button>
+                      </div>
+                    )}
 
                     {/* Edit form ke action buttons: Cancel (edit band karo) aur Save (changes save karo) */}
                     <div className="sm:col-span-4 flex gap-2 justify-end">
@@ -644,7 +788,11 @@ export default function MenuPage(): JSX.Element {
 
                       {/* Price aur estimated time, aur agar category ho to colored badge */}
                       <div className="text-xs text-gray-400 flex items-center gap-2">
-                        <span>₹{it.price} · ~{it.avgMinutes} min</span>
+                        <span>
+                          {it.options?.length
+                            ? it.options.map((option) => `${option.name} ₹${option.price}`).join(" / ")
+                            : `₹${it.price}`} · ~{it.avgMinutes} min
+                        </span>
                         {/* Category sirf tab dikhao jab set ho — optional field hai */}
                         {it.category && (
                           <span className="bg-brand/10 text-brand px-1.5 py-0.5 rounded-full text-xs">

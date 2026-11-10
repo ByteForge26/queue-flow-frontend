@@ -4,17 +4,17 @@
 
 :root {
   color-scheme: light;
-  --bg-primary: #f4f7ff;
-  --bg-secondary: #eef2ff;
-  --surface: rgba(255, 255, 255, 0.86);
-  --surface-strong: rgba(255, 255, 255, 0.96);
-  --border: rgba(148, 163, 184, 0.25);
-  --text: #0f172a;
-  --muted: #475569;
+  --bg-primary: #f2f4f8;
+  --bg-secondary: #e9edf4;
+  --surface: #ffffff;
+  --surface-strong: #ffffff;
+  --border: #d7deea;
+  --text: #172033;
+  --muted: #5b6575;
   --brand: #4f46e5;
   --brand-strong: #4338ca;
-  --soft-shadow: 0 20px 55px rgba(15, 23, 42, 0.08);
-  --luxury-shadow: 0 25px 70px rgba(79, 70, 229, 0.18);
+  --soft-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 3px 10px rgba(15, 23, 42, 0.035);
+  --luxury-shadow: 0 12px 32px rgba(15, 23, 42, 0.075);
 }
 
 html {
@@ -28,11 +28,7 @@ body {
 body {
   @apply min-h-screen antialiased text-slate-900;
   margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(99, 102, 241, 0.18), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.08), transparent 22%),
-    radial-gradient(circle at center, rgba(168, 85, 247, 0.06), transparent 30%),
-    linear-gradient(180deg, #f8faff 0%, #eef2ff 100%);
+  background: var(--bg-primary);
   font-family: Inter, "Segoe UI", sans-serif;
 }
 
@@ -94,26 +90,35 @@ textarea:focus {
 
 @layer components {
   .premium-shell {
-    @apply rounded-[28px] border border-white/60 bg-white/75 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl;
+    @apply rounded-2xl border border-slate-300 bg-white;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.085);
   }
 
   .page-shell {
-    @apply rounded-[30px] border border-slate-200/80 bg-white/80 shadow-[0_25px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl;
+    @apply rounded-2xl border border-slate-300 bg-white;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
   }
 
   .metric-card {
-    @apply rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 shadow-sm;
+    @apply rounded-xl border border-slate-300 bg-white p-4;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
   }
 
   .soft-card {
-    @apply rounded-[24px] border border-slate-200/80 bg-white/90 shadow-[0_14px_34px_rgba(15,23,42,0.06)];
+    @apply rounded-2xl border border-slate-300 bg-white;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
   }
 
   .section-pill {
-    @apply inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand;
+    @apply inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600;
   }
 
   .field-input {
-    @apply w-full rounded-2xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-indigo-300 focus:outline-none focus:ring-4 focus:ring-indigo-100;
+    @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100;
   }
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(79, 70, 229, 0.24);
+  outline-offset: 2px;
 }

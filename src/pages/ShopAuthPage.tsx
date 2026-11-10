@@ -273,7 +273,7 @@ export default function ShopAuthPage() {
       <div className="mx-auto max-w-xl">
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-indigo-600 text-lg font-bold text-white shadow-lg shadow-indigo-500/30">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-lg font-bold text-white">
               QF
             </div>
             <div>
@@ -284,7 +284,7 @@ export default function ShopAuthPage() {
           <div className="flex items-center gap-2">
             <Link
               to="/"
-              className="rounded-full border border-slate-200 bg-white/90 px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-brand"
+              className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               ← {t("auth.backHome")}
             </Link>
@@ -293,10 +293,10 @@ export default function ShopAuthPage() {
         </div>
 
         <div className="premium-shell p-4 sm:p-5">
-          <div className="mb-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-900 to-brand p-4 text-white shadow-xl shadow-indigo-500/20">
-            <div className="text-xs uppercase tracking-[0.2em] text-indigo-100">Business access</div>
-            <h1 className="mt-2 text-2xl font-black">{t("auth.title")}</h1>
-            <p className="mt-1 text-sm text-indigo-100">{t("auth.subtitle")}</p>
+          <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Business access</div>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{t("auth.title")}</h1>
+            <p className="mt-1 text-sm text-slate-600">{t("auth.subtitle")}</p>
           </div>
 
           <div className="mb-4 flex rounded-2xl bg-slate-100 p-1">
@@ -304,7 +304,7 @@ export default function ShopAuthPage() {
               <button
                 key={tb}
                 onClick={(): void => { setTab(tb); setError(null); setFieldErrors({}); }}
-                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
+                className={`min-h-11 flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold transition ${
                   tab === tb ? "bg-white text-brand shadow-sm" : "text-slate-500"
                 }`}
               >

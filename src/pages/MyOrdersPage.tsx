@@ -96,7 +96,7 @@ export default function MyOrdersPage() {
 
         {/* ---- Page heading section ---- */}
         {/* Title aur shop ka naam center mein dikhata hai */}
-        <div className="mb-6 rounded-[28px] bg-gradient-to-r from-brand via-indigo-600 to-violet-600 p-5 text-white shadow-[0_18px_45px_rgba(79,70,229,0.24)]">
+        <div className="mb-6 rounded-2xl bg-slate-900 p-5 text-white shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-100">QueueFlow</p>
           <h1 className="mt-2 text-3xl font-bold">{t("myorders.title")}</h1>
           {shop && <p className="mt-2 text-sm text-indigo-100">{shop.name}</p>}

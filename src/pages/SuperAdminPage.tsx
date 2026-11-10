@@ -356,10 +356,10 @@ export default function SuperAdminPage(): Element {
   if (!token) {
     return (
       // Login screen — centered card layout
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.18),_transparent_30%),linear-gradient(180deg,#f8faff_0%,#eef2ff_100%)] px-4 py-12">
-        <div className="mx-auto w-full max-w-md rounded-[28px] border border-white/60 bg-white/80 p-5 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:p-8">
+      <div className="min-h-screen px-4 py-12">
+        <div className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.08)] sm:p-8">
           <div className="mb-6 text-center">
-            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-brand to-violet-600 text-xl shadow-lg shadow-indigo-200">⚙️</div>
+            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 text-xl text-white">⚙️</div>
             <h1 className="text-2xl font-bold text-slate-900">Super Admin</h1>
             <p className="mt-1 text-xs uppercase tracking-[0.22em] text-slate-500">Developer access only</p>
           </div>
@@ -381,7 +381,7 @@ export default function SuperAdminPage(): Element {
             {loginErr && <p className="text-xs text-red-500">{loginErr}</p>}
             <button
               onClick={handleLogin}
-              className="w-full rounded-xl bg-gradient-to-r from-brand to-indigo-600 py-2.5 font-medium text-white shadow-[0_12px_30px_rgba(79,70,229,0.22)] transition hover:translate-y-[-1px]"
+              className="min-h-11 w-full rounded-xl bg-brand px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-brand-dark"
             >
               Login
             </button>
@@ -397,13 +397,13 @@ export default function SuperAdminPage(): Element {
       {/* Fixed header — hamesha upar dikhai deta hai, scroll ke saath nahi jaata */}
       <div className="border-b border-slate-200 bg-white/80 pb-4 backdrop-blur-xl">
         {/* Header bar — title, shops count, Refresh aur Logout buttons */}
-        <div className="mb-4 flex flex-col gap-3 rounded-[28px] bg-gradient-to-r from-slate-900 via-slate-800 to-violet-700 px-4 py-3 text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-900 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl font-bold">Super Admin Panel</h1>
-            <p className="text-xs text-slate-300">{shops.length} shops registered</p>
+            <p className="text-xs text-slate-500">{shops.length} shops registered</p>
           </div>
           <div className="flex gap-4">
-            <button onClick={loadShops} className="text-sm text-slate-300 hover:text-white">
+            <button onClick={loadShops} className="min-h-11 rounded-lg px-3 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
               Refresh
             </button>
             <button
@@ -411,7 +411,7 @@ export default function SuperAdminPage(): Element {
                 localStorage.removeItem(SA_TOKEN_KEY);
                 setToken("");
               }}
-              className="text-sm text-red-400 hover:text-red-300"
+              className="min-h-11 rounded-lg px-3 text-sm font-medium text-red-600 hover:bg-red-50"
             >
               Logout
             </button>
@@ -430,8 +430,8 @@ export default function SuperAdminPage(): Element {
                 else if (tab === "services") loadServiceBans();
                 else setActiveTab(tab);
               }}
-              className={`rounded-xl px-3 py-1.5 text-sm font-medium capitalize transition ${
-                activeTab === tab ? "bg-gradient-to-r from-brand to-indigo-600 text-white shadow-[0_8px_25px_rgba(79,70,229,0.18)]" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              className={`min-h-11 rounded-lg px-4 py-2 text-sm font-semibold capitalize transition ${
+                activeTab === tab ? "bg-slate-900 text-white shadow-sm" : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
               {tab}
