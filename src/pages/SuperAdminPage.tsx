@@ -921,7 +921,11 @@ export default function SuperAdminPage(): Element {
                           void resolveServiceRequest(request.id, "reject", serviceRequestRejectionReason.trim());
                         }}
                         disabled={resolvingRequestId !== null}
-                        className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+                          rejectingRequestId === request.id
+                            ? "bg-red-600 text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300"
+                            : "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                        }`}
                       >
                         {rejectingRequestId === request.id
                           ? (resolvingRequestId === request.id ? "Rejecting..." : "Confirm rejection")
