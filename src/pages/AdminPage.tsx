@@ -12,6 +12,7 @@ import {
   exportOrdersExcel,
   getAdminHistory,
   getAdminOverview,
+  getServiceAccessRequest,
   getAdminQrBlob,
   getAdminQrUrl,
   getPaymentQrBlob,
@@ -22,13 +23,14 @@ import {
   login,
   resetStaffPassword,
   selectBasicServices,
+  submitServiceAccessRequest,
   setShopOpen as apiSetShopOpen,
   setSectionActive,
   updateSectionDisplayName,
   updateShopDetails,
   uploadPaymentQr,
 } from "../lib/api";
-import type { AdminOverviewDto, HistoryDto, SectionStatsDto, ShopDetailDto, StaffStatsDto, StaffUserDto } from "../lib/types";
+import type { AdminOverviewDto, HistoryDto, SectionStatsDto, ServiceAccessRequestDto, ShopDetailDto, StaffStatsDto, StaffUserDto } from "../lib/types";
 import CountryTypeahead from "../components/CountryTypeahead";
 import { Card, Spinner, StatusBadge } from "../components/ui";
 import { Button } from "../components/ui";
@@ -50,6 +52,14 @@ const SECTION_BORDER: Record<string, string> = {
   GENERAL: "border-l-4 border-l-gray-400",
   OTHER: "border-l-4 border-l-slate-400",
 };
+
+function formatPlanAmount(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(amount);
+  } catch {
+    return `${currency} ${amount.toFixed(2)}`;
+  }
+}
 
 const ADMIN_TABS = ["overview", "services", "staff", "settings", "history", "support"] as const;
 type AdminTab = (typeof ADMIN_TABS)[number];
@@ -80,6 +90,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [newType, setNewType] = useState("");
+  const [customServiceName, setCustomServiceName] = useState("");
   const [sectionMsg, setSectionMsg] = useState<string | null>(null);
   const [sectionInfoOpen, setSectionInfoOpen] = useState<string | null>(null); // sectionCode
   const [deleteTarget, setDeleteTarget] = useState<SectionStatsDto | null>(null);
@@ -111,12 +122,28 @@ export default function AdminPage() {
   // plan info
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [serviceAccessRequest, setServiceAccessRequest] = useState<ServiceAccessRequestDto | null>(null);
+  const [requestSelectedCodes, setRequestSelectedCodes] = useState<string[]>([]);
+  const [requestMsg, setRequestMsg] = useState<string | null>(null);
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
   const [platformConfig, setPlatformConfig] = useState<{ showPlanInfoIcon: boolean; showPlanBadge: boolean;
-    paidPrice: string; paidCurrency: string; bannedServiceTypes: string[]; paymentQrEnabled: boolean; }>({ showPlanInfoIcon: false,
-    showPlanBadge: false, paidPrice: "", paidCurrency: "INR", bannedServiceTypes: [], paymentQrEnabled: false });
+    paidPrice: string; paidCurrency: string; bannedServiceTypes: string[]; paymentQrEnabled: boolean;
+    upgradeContactEnabled: boolean; upgradeContactPhone: string; }>({ showPlanInfoIcon: false,
+    showPlanBadge: false, paidPrice: "", paidCurrency: "INR", bannedServiceTypes: [], paymentQrEnabled: false,
+    upgradeContactEnabled: false, upgradeContactPhone: "" });
 
   // shop details edit
   const [shopDetail, setShopDetail] = useState<ShopDetailDto | null>(null);
+  const subscriptionLocked = shopDetail?.subscriptionLocked ?? false;
+  const subscriptionEndsAt = shopDetail?.paidUntil ?? shopDetail?.trialEndsAt ?? null;
+  const subscriptionEndLabel = subscriptionEndsAt
+    ? new Date(subscriptionEndsAt).toLocaleDateString()
+    : "";
+  const subscriptionDaysLabel = shopDetail?.subscriptionDaysRemaining == null
+    ? ""
+    : t("admin.subscriptionDaysRemaining", { count: shopDetail.subscriptionDaysRemaining });
+  const servicePrice = Number(platformConfig.paidPrice);
+  const requestedServiceTotal = servicePrice * requestSelectedCodes.length;
   const [editName, setEditName] = useState("");
   const [editCountry, setEditCountry] = useState("");
   const [editState, setEditState] = useState("");
@@ -213,16 +240,20 @@ export default function AdminPage() {
           paidCurrency: cfg.paidCurrency,
           bannedServiceTypes: cfg.bannedServiceTypes ?? [],
           paymentQrEnabled: cfg.paymentQrEnabled,
+          upgradeContactEnabled: cfg.upgradeContactEnabled,
+          upgradeContactPhone: cfg.upgradeContactPhone ?? "",
         });
       })
       .catch(() => {});
 
-    Promise.all([getAdminOverview(), getAdminHistory(), getStaffUsers(), getShopDetails()])
-      .then(([o, h, st, sd]) => {
+    Promise.all([getAdminOverview(), getAdminHistory(), getStaffUsers(), getShopDetails(), getServiceAccessRequest()])
+      .then(([o, h, st, sd, accessRequest]) => {
         setOverview(o);
         setHistory(h);
         setStaff(st);
         setShopDetail(sd);
+        setServiceAccessRequest(accessRequest);
+        setRequestSelectedCodes(accessRequest?.sections.map((section) => section.code) ?? []);
         setShopOpen(sd.open);
         setEditName(sd.name ?? "");
         setEditCountry(sd.country ?? "");
@@ -238,9 +269,46 @@ export default function AdminPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  async function submitAccessRequest(): Promise<void> {
+    if (requestSelectedCodes.length === 0 || requestSubmitting) return;
+    setRequestSubmitting(true);
+    setRequestMsg(null);
+    try {
+      const request = await submitServiceAccessRequest(requestSelectedCodes);
+      setServiceAccessRequest(request);
+      setRequestMsg(t("admin.serviceRequestSubmitted"));
+    } catch {
+      setRequestMsg(t("admin.serviceRequestFailed"));
+    } finally {
+      setRequestSubmitting(false);
+    }
+  }
+
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      Promise.all([getShopDetails(), getServiceAccessRequest()])
+        .then(([details, accessRequest]) => {
+          setShopDetail(details);
+          setServiceAccessRequest(accessRequest);
+        })
+        .catch((error: unknown) => console.error("Failed to refresh subscription status:", error));
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (subscriptionLocked && !["overview", "history", "support"].includes(adminTab)) {
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.set("tab", "overview");
+        return next;
+      });
+    }
+  }, [subscriptionLocked, adminTab, setSearchParams]);
 
   const refreshOverview = useCallback((): void => {
     getAdminOverview()
@@ -404,16 +472,17 @@ export default function AdminPage() {
     }
   }
 
-  async function addNewService() {
-    if (!newType) return;
+  async function addNewService(type = newType, displayName?: string) {
+    if (!type) return;
     setSectionMsg(null);
     try {
-      const o = await addSection(newType);
+      const o = await addSection(type, displayName);
       setOverview(o);
       setNewType("");
-      if (newType === "GENERAL") {
-        const addedGeneral = o.sections.find((section) => section.industryType === "GENERAL");
-        if (addedGeneral) openGeneralRename(addedGeneral);
+      if (displayName) setCustomServiceName("");
+      if (type === "GENERAL") {
+        const generalService = o.sections.find((section) => section.industryType === "GENERAL");
+        if (generalService) openGeneralRename(generalService);
       }
     } catch (e: unknown) {
       const err = e as { response?: { status?: number; data?: { message?: string; error?: string } } };
@@ -421,6 +490,10 @@ export default function AdminPage() {
       const serverMsg = err.response?.data?.message || err.response?.data?.error;
       if (status === 403 && serverMsg?.toLowerCase().includes("ban")) {
         setSectionMsg(t("admin.serviceTypeBanned"));
+      } else if (serverMsg?.includes("maximum 10")) {
+        setSectionMsg(t("admin.paidServiceLimit"));
+      } else if (serverMsg?.includes("already exists")) {
+        setSectionMsg(t("admin.duplicateCustomService"));
       } else if (status === 409) {
         setSectionMsg(t("admin.dupService"));
       } else {
@@ -611,7 +684,7 @@ export default function AdminPage() {
   if (loading) return <Spinner />;
 
   // Force service select screen — BASIC downgrade ke baad, jab tak admin services choose nahi karta
-  if (shopDetail?.forceServiceSelect && shopDetail?.tierSystemEnabled && shopDetail?.plan === "BASIC") {
+  if (shopDetail?.forceServiceSelect && shopDetail?.plan === "BASIC" && !subscriptionLocked) {
     const allSections = overview?.sections ?? [];
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -694,11 +767,95 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {subscriptionLocked && (
+        <Card className="mt-4 border border-red-200 bg-red-50">
+          <p className="font-semibold text-red-800">{t("admin.subscriptionLockedTitle")}</p>
+          <p className="mt-1 text-sm text-red-700">{t("admin.subscriptionLockedDesc")}</p>
+          {subscriptionEndLabel && <p className="mt-1 text-xs text-red-600">{subscriptionEndLabel}</p>}
+        </Card>
+      )}
+      {!subscriptionLocked && shopDetail?.subscriptionReminder && (
+        <Card className="mt-4 border border-amber-200 bg-amber-50">
+          <p className="font-semibold text-amber-900">
+            {shopDetail.subscriptionReminder === "SEVEN_DAYS"
+              ? t("admin.subscriptionReminder7")
+              : t("admin.subscriptionReminder1")}
+          </p>
+          {subscriptionEndLabel && <p className="mt-1 text-xs text-amber-800">{subscriptionEndLabel}</p>}
+          <Button onClick={() => setShowUpgradeModal(true)} className="mt-3">{t("admin.upgradeToPaid")}</Button>
+        </Card>
+      )}
+      {!subscriptionLocked && shopDetail?.plan === "PAID" && subscriptionEndLabel && (
+        <p className="mt-2 text-right text-xs text-slate-500">
+          {shopDetail.paidUntil ? t("admin.subscriptionPaidUntil") : t("admin.subscriptionTrialUntil")} {subscriptionEndLabel}
+          {subscriptionDaysLabel && <span> · {subscriptionDaysLabel}</span>}
+        </p>
+      )}
       {/* Tab content — padded bottom for sticky nav */}
       <div className="pb-36 pt-4 sm:pb-20">
 
         {/* ── OVERVIEW TAB ── */}
         {adminTab === "overview" && (
+          subscriptionLocked ? (
+            <Card className="mx-auto mt-6 max-w-lg border border-red-200 text-center">
+              <h2 className="text-lg font-bold text-slate-800">{t("admin.subscriptionLockedTitle")}</h2>
+              <p className="mt-2 text-sm text-slate-600">{t("admin.subscriptionLockedDesc")}</p>
+              {subscriptionEndLabel && <p className="mt-2 text-xs text-slate-500">{subscriptionEndLabel}</p>}
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                <Button variant="ghost" onClick={() => void handleExportCsv()}>{t("admin.subscriptionDownloadCsv")}</Button>
+              </div>
+              <div className="mt-5 border-t border-slate-100 pt-4 text-left">
+                <h3 className="font-semibold text-slate-800">{t("admin.serviceRequestTitle")}</h3>
+                <p className="mt-1 text-xs text-slate-600">{t("admin.serviceRequestDescription")}</p>
+                {serviceAccessRequest ? (
+                  <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <p className="text-sm font-semibold text-amber-900">{t("admin.serviceRequestPending")}</p>
+                    <p className="mt-1 text-xs text-amber-800">
+                      {serviceAccessRequest.sections.map((section) => section.displayName).join(", ")} ·{" "}
+                      {formatPlanAmount(serviceAccessRequest.amount, serviceAccessRequest.currency)}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-3 max-h-48 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-2">
+                      {(overview?.sections ?? []).map((section) => (
+                        <label key={section.sectionCode} className={`flex items-center gap-2 rounded-lg p-2 text-sm ${
+                          section.globallyBanned ? "text-slate-400" : "text-slate-700"
+                        }`}>
+                          <input
+                            type="checkbox"
+                            checked={requestSelectedCodes.includes(section.sectionCode)}
+                            disabled={section.globallyBanned}
+                            onChange={() => setRequestSelectedCodes((current) =>
+                              current.includes(section.sectionCode)
+                                ? current.filter((code) => code !== section.sectionCode)
+                                : [...current, section.sectionCode])}
+                          />
+                          <span className="min-w-0 flex-1 truncate">{section.displayName}</span>
+                          {section.globallyBanned && <span className="text-xs">{t("admin.serviceUnavailable")}</span>}
+                        </label>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs font-medium text-slate-700">
+                      {t("admin.serviceRequestTotal", {
+                        count: requestSelectedCodes.length,
+                        price: formatPlanAmount(servicePrice, platformConfig.paidCurrency),
+                        total: formatPlanAmount(requestedServiceTotal, platformConfig.paidCurrency),
+                      })}
+                    </p>
+                    {requestMsg && <p className="mt-2 text-xs text-amber-800">{requestMsg}</p>}
+                    <Button
+                      onClick={() => void submitAccessRequest()}
+                      disabled={requestSelectedCodes.length === 0 || requestSubmitting || !Number.isFinite(servicePrice) || servicePrice <= 0}
+                      className="mt-3 w-full"
+                    >
+                      {requestSubmitting ? t("admin.serviceRequestSending") : t("admin.serviceRequestSubmit")}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </Card>
+          ) : (
           <>
             {/* Shop code + Live/Offline toggle + QR */}
             <Card className="mb-4">
@@ -823,7 +980,7 @@ export default function AdminPage() {
             )}
 
             {/* BASIC upgrade CTA */}
-            {shopDetail?.plan === "BASIC" && shopDetail?.tierSystemEnabled && (
+            {shopDetail?.plan === "BASIC" && !subscriptionLocked && (
               <Card className="mb-4 border border-slate-200 bg-white py-4 text-center">
                 <p className="text-sm font-semibold text-amber-700 mb-2">✨ {t("admin.upgradeToPaid")}</p>
                 <button onClick={() => setShowUpgradeModal(true)}
@@ -833,6 +990,7 @@ export default function AdminPage() {
               </Card>
             )}
           </>
+          )
         )}
 
         {/* ── SERVICES TAB ── */}
@@ -843,41 +1001,62 @@ export default function AdminPage() {
                 t("admin.tabInfoServices3"), t("admin.tabInfoServices4")]} />
             {/* Add service card */}
             {(() => {
-              const isBasicLimited = shopDetail?.plan === "BASIC" && shopDetail?.tierSystemEnabled;
-              const activeCount = overview?.sections.filter((s) => s.active).length ?? 0;
-              const basicMaxReached = isBasicLimited && activeCount >= 2;
-              const taken = new Set(overview?.sections.map((s) => s.industryType) ?? []);
+              const isPaid = shopDetail?.plan === "PAID";
+              const sections = overview?.sections ?? [];
+              const totalCount = sections.length;
+              const paidMaxReached = isPaid && totalCount >= 10;
+              const taken = new Set(sections.map((s) => s.industryType));
               const globallyBannedTypes = new Set(platformConfig.bannedServiceTypes);
               const available: string[] = ["FOOD", "SALON", "CLINIC", "GROCERY", "ROOMS", "GENERAL"].filter(
                 (ty) => !taken.has(ty) && !globallyBannedTypes.has(ty)
               );
               return (
                 <Card className="mb-4 border-t-4 border-t-indigo-300">
-                  {basicMaxReached ? (
-                    <p className="text-sm text-amber-600">{t("admin.basicMaxServices")}
-                      <button onClick={() => setShowUpgradeModal(true)}
-                        className="underline font-medium">{t("admin.basicUpgradeLink")}</button>
-                      {t("admin.basicMaxServicesUpgradeSuffix")} {t("admin.basicDisableFirst")}</p>
-                  ) : available.length === 0 ? (
-                    <p className="text-sm text-gray-400">{t("admin.allServicesAdded")}</p>
-                  ) : (
+                  {isPaid && (
+                    <p className="mb-3 text-xs text-slate-500">
+                      {t("admin.paidServiceCount", { count: totalCount })}
+                    </p>
+                  )}
+                  {paidMaxReached && <p className="mb-3 text-sm text-amber-700">{t("admin.paidServiceLimit")}</p>}
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <div className="flex items-end gap-2">
-                      <div className="flex-1">
+                      <div className="min-w-0 flex-1">
                         <label className="block text-sm text-gray-600 mb-1">{t("admin.addService")}</label>
                         <select
                           value={newType}
                           onChange={(e) => setNewType(e.target.value)}
                           className="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/40"
                         >
-                          <option value="">{t("admin.pickService")}</option>
+                          <option value="">{available.length ? t("admin.pickService") : t("admin.allServicesAdded")}</option>
                           {available.map((ty) => (
                             <option key={ty} value={ty}>{ty}</option>
                           ))}
                         </select>
                       </div>
-                      <Button onClick={addNewService} disabled={!newType}>{t("common.add")}</Button>
+                      <Button onClick={() => void addNewService()} disabled={!newType || paidMaxReached}>
+                        {t("common.add")}
+                      </Button>
                     </div>
-                  )}
+                    <div className="flex items-end gap-2">
+                      <div className="min-w-0 flex-1">
+                        <label className="block text-sm text-gray-600 mb-1">{t("admin.customServiceName")}</label>
+                        <input
+                          value={customServiceName}
+                          maxLength={100}
+                          onChange={(event) => setCustomServiceName(event.target.value)}
+                          placeholder={t("admin.customServicePlaceholder")}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2.5"
+                        />
+                      </div>
+                      <Button
+                        onClick={() => void addNewService("OTHER", customServiceName.trim())}
+                        disabled={!customServiceName.trim() || paidMaxReached}
+                      >
+                        + {t("common.add")}
+                      </Button>
+                    </div>
+                  </div>
+                  {available.length === 0 && <p className="mt-2 text-xs text-gray-400">{t("admin.allServicesAdded")}</p>}
                   {sectionMsg && <p className={`text-xs mt-2 ${sectionMsg === t("admin.serviceTypeBanned")
                     ? "text-red-500 font-medium" : "text-gray-500"}`}>{sectionMsg}</p>}
                 </Card>
@@ -886,12 +1065,10 @@ export default function AdminPage() {
 
             {/* Services list */}
             {(() => {
-              const activeCount = overview?.sections.filter((s) => s.active).length ?? 0;
-              const isBasicLimited = shopDetail?.plan === "BASIC" && shopDetail?.tierSystemEnabled;
               return (
                 <div className={`space-y-3 ${(overview?.sections.length ?? 0) > 3 ? "max-h-[560px] overflow-y-auto pr-1" : ""}`}>
                   {overview?.sections.map((s) => {
-                    const enableBlocked = (isBasicLimited && !s.active && activeCount >= 2) || s.globallyBanned;
+                    const enableBlocked = s.globallyBanned;
                     const deletionDate: string | null = s.deletionScheduledAt ? new Date(s.deletionScheduledAt).toLocaleDateString() : null;
                     return (
                       <Card key={s.sectionCode} className={`${SECTION_BORDER[s.industryType] ?? SECTION_BORDER.OTHER} ${s.active ? "" : "opacity-60"}`}>
@@ -915,7 +1092,7 @@ export default function AdminPage() {
                         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0 break-words font-semibold">
                             {s.displayName}
-                            {s.industryType === "GENERAL" && (
+                            {(s.industryType === "GENERAL" || s.industryType === "OTHER") && (
                               <button onClick={() => openGeneralRename(s)} className="ml-2 text-xs font-normal text-brand hover:underline">
                                 {t("common.edit")}
                               </button>
@@ -1436,7 +1613,8 @@ export default function AdminPage() {
                   { key: "history", icon: "📜", label: "History" },
                   { key: "support", icon: "💬", label: "Support" },
                 ] as const
-              ).map(({ key, icon, label }) => (
+              ).filter(({ key }) => !subscriptionLocked || ["overview", "history", "support"].includes(key))
+                .map(({ key, icon, label }) => (
                 <button
                   key={key}
                   onClick={() => changeAdminTab(key)}
@@ -1455,19 +1633,11 @@ export default function AdminPage() {
 
           {/* Upgrade to PAID modal */}
           {showUpgradeModal && (
-            <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center px-4 z-50">
-              <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:items-center">
+              <div className="max-h-[calc(100dvh_-_24px_-_env(safe-area-inset-bottom))] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-3xl bg-white shadow-2xl sm:max-h-[90dvh] sm:rounded-2xl">
                 <div className="bg-gradient-to-br from-brand/10 to-indigo-50 rounded-t-3xl sm:rounded-t-2xl px-6 pt-6 pb-4 text-center border-b border-gray-100">
                   <div className="text-3xl mb-2">✨</div>
                   <h2 className="text-lg font-bold text-gray-800">{t("admin.upgradeTitle")}</h2>
-                  {platformConfig.paidPrice && (
-                    <div className="mt-2 inline-flex items-baseline gap-1">
-                      <span className="text-3xl font-bold text-brand">
-                        {platformConfig.paidCurrency === "INR" ? "₹" : "$"}{platformConfig.paidPrice}
-                      </span>
-                      <span className="text-gray-400 text-sm">/{platformConfig.paidCurrency === "INR" ? "month" : "mo"}</span>
-                    </div>
-                  )}
                 </div>
                 <div className="px-6 py-4">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t("admin.planInfoPaidBenefitsTitle")}</p>
@@ -1479,7 +1649,11 @@ export default function AdminPage() {
                       </li>
                     ))}
                   </ul>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{t("admin.upgradeEmailLabel")}</p>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                    {platformConfig.upgradeContactEnabled && platformConfig.upgradeContactPhone
+                      ? t("admin.upgradeContactLabel")
+                      : t("admin.upgradeEmailLabel")}
+                  </p>
                   <div className="space-y-2 mb-4">
                     {[1, 2, 3, 4].map((i) => (
                       <div key={i} className="flex items-center gap-3">
@@ -1488,16 +1662,33 @@ export default function AdminPage() {
                       </div>
                     ))}
                   </div>
-                  <a href={`mailto:${t("admin.upgradeEmail")}?subject=Upgrade to PAID - ${shopDetail?.name ?? shopCode}`}
-                    className="flex items-center justify-between w-full bg-brand/5 hover:bg-brand/10 border border-brand/20 rounded-xl px-4 py-3 transition mb-3">
-                    <div className="text-left">
-                      <p className="text-xs text-gray-400">Email us</p>
-                      <p className="text-sm font-bold text-brand">{t("admin.upgradeEmail")}</p>
-                    </div>
-                    <svg className="w-4 h-4 text-brand flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </a>
+                  {platformConfig.upgradeContactEnabled && platformConfig.upgradeContactPhone ? (
+                    <a
+                      href={`https://wa.me/${platformConfig.upgradeContactPhone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                        `PAID plan upgrade request: ${shopDetail?.name ?? shopCode} (${shopCode})`
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mb-3 flex w-full items-center justify-between rounded-xl border border-brand/20 bg-brand/5 px-4 py-3 transition hover:bg-brand/10"
+                    >
+                      <div className="text-left">
+                        <p className="text-xs text-gray-400">{t("admin.upgradeContactLabel")}</p>
+                        <p className="break-all text-sm font-bold text-brand">{platformConfig.upgradeContactPhone}</p>
+                      </div>
+                      <span className="ml-3 text-sm font-semibold text-brand">{t("admin.upgradeContactAction")}</span>
+                    </a>
+                  ) : (
+                    <a href={`mailto:${t("admin.upgradeEmail")}?subject=Upgrade to PAID - ${shopDetail?.name ?? shopCode}`}
+                      className="mb-3 flex w-full items-center justify-between rounded-xl border border-brand/20 bg-brand/5 px-4 py-3 transition hover:bg-brand/10">
+                      <div className="text-left">
+                        <p className="text-xs text-gray-400">Email us</p>
+                        <p className="text-sm font-bold text-brand">{t("admin.upgradeEmail")}</p>
+                      </div>
+                      <svg className="h-4 w-4 flex-shrink-0 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </a>
+                  )}
                   <p className="text-xs text-gray-400 text-center mb-4">{t("admin.upgradeNote")}</p>
                   <Button onClick={() => setShowUpgradeModal(false)} className="w-full">{t("common.cancel")}</Button>
                 </div>
@@ -1517,28 +1708,6 @@ export default function AdminPage() {
                 <p className="text-sm text-gray-600 mb-3">
                   {shopDetail.plan === "PAID" ? t("admin.planInfoCurrentPaid") : t("admin.planInfoCurrentBasic")}
                 </p>
-                {shopDetail.plan === "BASIC" && (
-                  <>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t("admin.planInfoBasicLimits")}</p>
-                    <ul className="space-y-1 mb-3">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                          <span className="text-red-400">×</span>
-                          {t(`admin.planInfoLimit${i}`)}
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t("admin.planInfoPaidBenefitsTitle")}</p>
-                    <ul className="space-y-1 mb-3">
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                          <span className="text-emerald-500">✓</span>
-                          {t(`admin.planInfoPaidBenefit${i}`)}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
                 {shopDetail.plan === "PAID" && (
                   <>
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t("admin.planInfoPaidBenefitsTitle")}</p>

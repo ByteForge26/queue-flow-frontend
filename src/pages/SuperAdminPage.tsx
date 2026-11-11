@@ -14,17 +14,19 @@ import {
   superAdminUnbanService,
   superAdminClearIpLock,
   superAdminSetCustomFieldsEnabled,
-  superAdminSetTierSystemEnabled,
   superAdminSetShowPlanInfoIcon,
   superAdminSetShowPlanBadge,
   superAdminSetPaidPrice,
   superAdminSetPaymentQrEnabled,
+  superAdminSetUpgradeContact,
   superAdminBulkSetPlan,
   superAdminSetPlan,
   superAdminFetchQr,
   superAdminResetPassword,
+  superAdminGetServiceAccessRequests,
+  superAdminResolveServiceAccessRequest,
 } from "../lib/api";
-import type { SuperAdminShopDto, AuditLogEntryDto, GlobalBanStatusDto } from "../lib/types";
+import type { SuperAdminShopDto, AuditLogEntryDto, GlobalBanStatusDto, ServiceAccessRequestDto } from "../lib/types";
 
 // LocalStorage me SuperAdmin ka auth token store karne ke liye key
 // Token yahan save hota hai taaki page refresh pe bhi login session bana rahe
@@ -48,6 +50,9 @@ export default function SuperAdminPage(): Element {
   // shops: Saare registered shops ki list (SuperAdminShopDto type)
   // Ye list "Shops" tab me dikhti hai
   const [shops, setShops] = useState<SuperAdminShopDto[]>([]);
+  const [serviceRequests, setServiceRequests] = useState<ServiceAccessRequestDto[]>([]);
+  const [resolvingRequestId, setResolvingRequestId] = useState<number | null>(null);
+  const [serviceRequestError, setServiceRequestError] = useState("");
 
   // search: Shops list me live search/filter ke liye input value
   const [search, setSearch] = useState("");
@@ -58,10 +63,6 @@ export default function SuperAdminPage(): Element {
   // customFieldsEnabled: Kya platform pe custom intake fields feature ON hai?
   // Shop owners custom fields add kar sakte hain ya nahi — ye global toggle hai
   const [customFieldsEnabled, setCustomFieldsEnabledState] = useState(true);
-
-  // tierSystemEnabled: Kya BASIC/PAID plan restrictions enforce ho rahi hain?
-  // Agar true hai toh BASIC shops pe limits lagti hain (max 2 services, etc.)
-  const [tierSystemEnabled, setTierSystemEnabledState] = useState(false);
 
   // showPlanInfoIcon: Shop admin dashboard pe plan info icon (i) dikhaye ya nahi
   const [showPlanInfoIcon, setShowPlanInfoIconState] = useState(false);
@@ -79,6 +80,8 @@ export default function SuperAdminPage(): Element {
 
   // paidCurrency: PAID plan ki currency (default INR)
   const [paidCurrency, setPaidCurrencyState] = useState("INR");
+  const [upgradeContactEnabled, setUpgradeContactEnabledState] = useState(false);
+  const [upgradeContactPhone, setUpgradeContactPhoneState] = useState("");
 
   // priceSaved: Price save karne ke baad 2 second ke liye "✓" dikhane ka flag
   const [priceSaved, setPriceSaved] = useState(false);
@@ -124,6 +127,9 @@ export default function SuperAdminPage(): Element {
   // plan set flow
   // planTarget: Jis shop ka plan change karna hai uska data — null agar modal band hai
   const [planTarget, setPlanTarget] = useState<SuperAdminShopDto | null>(null);
+  const [renewTarget, setRenewTarget] = useState<SuperAdminShopDto | null>(null);
+  const [selectedPaidCodes, setSelectedPaidCodes] = useState<string[]>([]);
+  const [paymentAmount, setPaymentAmount] = useState("");
 
   // planMsg: Plan change ke baad success ya error message (modal ke andar)
   const [planMsg, setPlanMsg] = useState("");
@@ -157,21 +163,44 @@ export default function SuperAdminPage(): Element {
   async function loadShops(): Promise<void> {
     setLoading(true);
     try {
-      const [data, cfg] = await Promise.all([superAdminListShops(), getPlatformConfig()]);
+      const [data, cfg, requests] = await Promise.all([
+        superAdminListShops(),
+        getPlatformConfig(),
+        superAdminGetServiceAccessRequests(),
+      ]);
       setShops(data);
+      setServiceRequests(requests);
       setCustomFieldsEnabledState(cfg.customFieldsEnabled);
-      setTierSystemEnabledState(cfg.tierSystemEnabled);
       setShowPlanInfoIconState(cfg.showPlanInfoIcon);
       setShowPlanBadgeState(cfg.showPlanBadge);
       setPaidPriceState(cfg.paidPrice ?? "");
       setPaidCurrencyState(cfg.paidCurrency ?? "INR");
       setPaymentQrEnabledState(cfg.paymentQrEnabled);
+      setUpgradeContactEnabledState(cfg.upgradeContactEnabled);
+      setUpgradeContactPhoneState(cfg.upgradeContactPhone ?? "");
     } catch {
       // Token invalid ya expire ho gaya — localStorage clean karke logout
       localStorage.removeItem(SA_TOKEN_KEY);
       setToken("");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function resolveServiceRequest(requestId: number, action: "approve" | "reject"): Promise<void> {
+    setResolvingRequestId(requestId);
+    setServiceRequestError("");
+    try {
+      await superAdminResolveServiceAccessRequest(requestId, action);
+      setServiceRequests((current) => current.filter((request) => request.id !== requestId));
+      if (action === "approve") {
+        const updatedShops = await superAdminListShops();
+        setShops(updatedShops);
+      }
+    } catch {
+      setServiceRequestError("Could not resolve this request. Verify the current price and service status, then try again.");
+    } finally {
+      setResolvingRequestId(null);
     }
   }
 
@@ -227,20 +256,6 @@ export default function SuperAdminPage(): Element {
     setCustomFieldsEnabledState(next);
   }
 
-  // tierConfirm: Tier system toggle ke liye confirm modal me next value store hoti hai.
-  // null = modal band hai; true/false = enable/disable confirm kar raha hai
-  const [tierConfirm, setTierConfirm] = useState<boolean | null>(null); // next value to confirm
-
-  // confirmToggleTierSystem: Tier system ka pending toggle actually execute karta hai.
-  // tierConfirm state me jo value hai woh API ko bhejta hai, phir state reset karta hai.
-  // Modal ke "Yes, enable/disable" button se yahi function call hota hai.
-  async function confirmToggleTierSystem(): Promise<void> {
-    if (tierConfirm === null) return;
-    await superAdminSetTierSystemEnabled(tierConfirm);
-    setTierSystemEnabledState(tierConfirm);
-    setTierConfirm(null);
-  }
-
   // toggleShowPlanInfoIcon: Shop admin dashboard pe plan info icon (i) show/hide toggle.
   async function toggleShowPlanInfoIcon(): Promise<void> {
     const next: boolean = !showPlanInfoIcon;
@@ -262,6 +277,11 @@ export default function SuperAdminPage(): Element {
     await superAdminSetPaidPrice(paidPrice, paidCurrency);
     setPriceSaved(true);
     setTimeout((): void => setPriceSaved(false), 2000);
+  }
+
+  async function saveUpgradeContact(): Promise<void> {
+    await superAdminSetUpgradeContact(upgradeContactEnabled, upgradeContactPhone);
+    await loadShops();
   }
 
   // doBulkPlan: Saare shops ka plan ek saath "BASIC" ya "PAID" me convert karta hai.
@@ -288,27 +308,113 @@ export default function SuperAdminPage(): Element {
   function openPlanFlow(shop: SuperAdminShopDto): void {
     setPlanTarget(shop);
     setPlanMsg("");
+    setPaymentAmount("");
+    setSelectedPaidCodes(shop.sections.filter((section) => section.active && !section.globallyBanned)
+      .map((section) => section.code));
   }
 
-  // confirmPlanChange: Plan change confirm hone pe actual API call karta hai.
-  // Agar shop abhi PAID hai toh BASIC karega, agar BASIC hai toh PAID karega.
-  // Downgrade (PAID → BASIC) me backend saari sections disable karega, admin khud
-  // re-select karega. Upgrade (BASIC → PAID) me seedha switch ho jaata hai.
+  function openRenewalFlow(shop: SuperAdminShopDto): void {
+    setRenewTarget(shop);
+    setPlanMsg("");
+    setPaymentAmount("");
+    setSelectedPaidCodes(shop.sections.filter((section) => section.active && !section.globallyBanned)
+      .map((section) => section.code));
+  }
+
+  // A payment covers only the services explicitly selected by Super Admin.
+  function togglePaidService(code: string): void {
+    setSelectedPaidCodes((current) =>
+      current.includes(code) ? current.filter((value) => value !== code) : [...current, code]);
+  }
+
+  function paidAmountMatchesSelection(): boolean {
+    const unitPrice = Number(paidPrice);
+    const enteredAmount = Number(paymentAmount);
+    return selectedPaidCodes.length > 0 && Number.isFinite(unitPrice) && unitPrice > 0
+      && Number.isFinite(enteredAmount)
+      && Math.abs(enteredAmount - unitPrice * selectedPaidCodes.length) < 0.000001;
+  }
+
+  function formatMoney(amount: number, currency = paidCurrency): string {
+    try {
+      return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(amount);
+    } catch {
+      return `${currency} ${amount.toFixed(2)}`;
+    }
+  }
+
+  function renderPaidServiceSelection(shop: SuperAdminShopDto): Element {
+    const expectedAmount = Number(paidPrice) * selectedPaidCodes.length;
+    return (
+      <div className="mb-4 space-y-3">
+        <p className="text-sm font-semibold">Mark the services covered by this payment</p>
+        <div className="max-h-48 space-y-2 overflow-y-auto rounded-xl border border-gray-100 p-2">
+          {shop.sections.map((section) => (
+            <label key={section.code} className={`flex items-center gap-2 rounded-lg p-2 text-sm ${
+              section.globallyBanned ? "text-gray-400" : "text-gray-700"
+            }`}>
+              <input
+                type="checkbox"
+                checked={selectedPaidCodes.includes(section.code)}
+                disabled={section.globallyBanned}
+                onChange={() => togglePaidService(section.code)}
+              />
+              <span className="min-w-0 flex-1 truncate">{section.displayName}</span>
+              {section.globallyBanned && <span className="text-xs">Banned</span>}
+            </label>
+          ))}
+          {shop.sections.length === 0 && <p className="p-2 text-sm text-gray-400">Shop has no services.</p>}
+        </div>
+        <p className="text-xs text-gray-600">
+          Expected: {selectedPaidCodes.length} × {formatMoney(Number(paidPrice) || 0)} = {formatMoney(expectedAmount || 0)} for 30 days
+        </p>
+        <label className="block text-sm">
+          Amount received
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            inputMode="decimal"
+            value={paymentAmount}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setPaymentAmount(event.target.value)}
+            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2"
+            placeholder="Enter received amount"
+          />
+        </label>
+        {!paidAmountMatchesSelection() && (
+          <p className="text-xs text-amber-700">Amount must exactly match the selected services.</p>
+        )}
+      </div>
+    );
+  }
+
+  // A PAID plan update requires both the verified amount and its covered service list.
   async function confirmPlanChange(): Promise<void> {
     if (!planTarget) return;
     const newPlan: "BASIC" | "PAID" = planTarget.plan === "PAID" ? "BASIC" : "PAID";
-    // Downgrade: backend saari sections disable karega, admin khud select karega
-    // Upgrade: seedha PAID kar do
-    await doSetPlan(newPlan, []);
+    await doSetPlan(newPlan, newPlan === "PAID" ? selectedPaidCodes : [],
+      newPlan === "PAID" ? paymentAmount : undefined);
+  }
+
+  async function confirmRenewal(): Promise<void> {
+    if (!renewTarget) return;
+    try {
+      const updated = await superAdminSetPlan(renewTarget.code, "PAID", selectedPaidCodes, paymentAmount);
+      setShops((current) => current.map((shop) => shop.code === updated.code ? updated : shop));
+      setRenewTarget(null);
+      setPlanMsg(`✓ ${updated.name} renewed for 30 days`);
+    } catch {
+      setPlanMsg("Payment amount or service selection is invalid.");
+    }
   }
 
   // doSetPlan: Ek specific shop ka plan API ke zariye set karta hai.
   // Success pe shops list me sirf woh shop update hoti hai (poori list re-fetch nahi).
   // planTarget null ho jaata hai jisse modal band ho jaata hai.
-  async function doSetPlan(plan: string, keepCodes: string[]): Promise<void> {
+  async function doSetPlan(plan: string, keepCodes: string[], amountPaid?: string): Promise<void> {
     if (!planTarget) return;
     try {
-      const updated: SuperAdminShopDto = await superAdminSetPlan(planTarget.code, plan, keepCodes);
+      const updated: SuperAdminShopDto = await superAdminSetPlan(planTarget.code, plan, keepCodes, amountPaid);
       // Sirf woh ek shop update karo jis pe action hua — baki list waise hi rahe
       setShops((prev: SuperAdminShopDto[]) => prev.map((s: SuperAdminShopDto) => (s.code === updated.code ? updated : s)));
       setPlanMsg(`✓ ${planTarget.name} is now ${plan}`);
@@ -534,50 +640,6 @@ export default function SuperAdminPage(): Element {
           </div>
         )}
 
-        {/* Tier system toggle confirm modal — destructive action isliye confirm liya jaata hai
-            Tier system ON karne pe BASIC shops par limits lagti hain, OFF karne pe sab unlimited */}
-        {tierConfirm !== null && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center px-4 z-50">
-            <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
-              <h2 className="font-bold mb-2">{tierConfirm ? "Enable Tier System?" : "Disable Tier System?"}</h2>
-              <p className="text-sm text-gray-600 mb-3">
-                {tierConfirm ? "BASIC plan shops will be restricted:" : "All shops will work without any plan restrictions:"}
-              </p>
-              {/* Conditional bullet list — enable karne pe restrictions, disable karne pe freedoms */}
-              <ul className="space-y-1.5 mb-4 text-sm text-gray-700">
-                {tierConfirm ? (
-                  <>
-                    <li className="flex gap-2"><span className="text-red-400 flex-shrink-0">×</span>Max 2 active services per BASIC shop</li>
-                    <li className="flex gap-2"><span className="text-red-400 flex-shrink-0">×</span>Max 2 staff accounts per BASIC shop</li>
-                    <li className="flex gap-2"><span className="text-red-400 flex-shrink-0">×</span>Max 5 orders per day per service (2 services = 10 total)</li>
-                    <li className="flex gap-2"><span className="text-red-400 flex-shrink-0">×</span>Max 10 menu items per service (BASIC)</li>
-                    <li className="flex gap-2"><span className="text-red-400 flex-shrink-0">×</span>No custom intake fields for BASIC shops</li>
-                  </>
-                ) : (
-                  <>
-                    <li className="flex gap-2"><span className="text-emerald-500 flex-shrink-0">✓</span>All BASIC shops get unlimited access</li>
-                    <li className="flex gap-2"><span className="text-emerald-500 flex-shrink-0">✓</span>No service / staff / order limits enforced</li>
-                    <li className="flex gap-2"><span className="text-amber-500 flex-shrink-0">▲</span>BASIC shops already over limit will not be auto-restricted — only new actions will be unrestricted</li>
-                  </>
-                )}
-              </ul>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={confirmToggleTierSystem}
-                  className={`w-full py-2.5 rounded-xl font-medium text-white ${
-                    tierConfirm ? "bg-brand hover:opacity-90" : "bg-gray-600 hover:bg-gray-700"
-                  }`}
-                >
-                  Yes, {tierConfirm ? "enable" : "disable"} tier system
-                </button>
-                <button onClick={(): void => setTierConfirm(null)} className="w-full bg-gray-100 hover:bg-gray-200 py-2.5 rounded-xl text-sm">
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Bulk plan change confirm modal — bahut bada action hai (saare shops affect) isliye confirm */}
         {bulkPlanConfirm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center px-4 z-50">
@@ -630,15 +692,12 @@ export default function SuperAdminPage(): Element {
           </div>
         )}
 
-        {/* Platform settings tab — sirf "settings" tab active hone pe dikhta hai
-            Yahan tier system, pricing, custom fields, badges sab configure hote hain */}
+        {/* Platform settings tab — sirf "settings" tab active hone pe dikhta hai */}
         {activeTab === "settings" && (
           <div className="bg-white border border-gray-100 rounded-2xl px-4 py-3 mb-4 space-y-3 border-t-4 border-t-slate-500">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Platform Settings</p>
 
-            {/* Tier system toggle — array me isliye hai ki baad me aur toggles add karna aasan rahe */}
             {[
-              { label: "Tier system (BASIC/PAID limits)", desc: "Enforce limits on BASIC shops", val: tierSystemEnabled, toggle: (): void => setTierConfirm(!tierSystemEnabled) },
               { label: "Payment QR (UPI etc.)", desc: "PAID shops apna payment QR upload/dikha sakti hain - disable karna global ban jaisa hai.", val: paymentQrEnabled, toggle: togglePaymentQrEnabled }, // FIX: pehle '(): void => togglePaymentQrEnabled' tha, jo function ko call kiye bina return kar raha tha (type error)
             ].map((item: { label: string; desc: string; val: boolean; toggle: () => void }): Element => (
               // Toggle switch UI — green jab ON, gray jab OFF
@@ -662,9 +721,9 @@ export default function SuperAdminPage(): Element {
               </div>
             ))}
 
-            {/* Pricing section — PAID plan ke liye price aur currency set karna */}
+            {/* Pricing is charged per selected service for each 30-day paid period. */}
             <div className="pt-3 border-t border-gray-100">
-              <p className="text-sm font-medium mb-2">PAID subscription price</p>
+              <p className="text-sm font-medium mb-2">PAID price per service (30 days)</p>
               <div className="flex gap-2">
                 {/* Price input — number string (e.g. "299") */}
                 <input
@@ -694,7 +753,46 @@ export default function SuperAdminPage(): Element {
                   {priceSaved ? "✓" : "Save"}
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Shown to BASIC shop owners on upgrade button</p>
+              <p className="text-xs text-gray-400 mt-1">Each paid service costs this amount for 30 days.</p>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Upgrade payment contact</p>
+                  <p className="text-xs text-gray-400">This number is shown in the shop owner's upgrade screen.</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Toggle upgrade contact visibility"
+                  aria-pressed={upgradeContactEnabled}
+                  onClick={() => setUpgradeContactEnabledState((enabled) => !enabled)}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+                    upgradeContactEnabled ? "bg-emerald-500" : "bg-gray-300"
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                    upgradeContactEnabled ? "translate-x-6" : "translate-x-1"
+                  }`} />
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  value={upgradeContactPhone}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setUpgradeContactPhoneState(event.target.value)}
+                  placeholder="UPI/payment contact number"
+                  className="min-w-0 flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                />
+                <button
+                  onClick={() => void saveUpgradeContact()}
+                  disabled={upgradeContactEnabled && !upgradeContactPhone.trim()}
+                  className="rounded-xl bg-brand px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </div>
             </div>
 
             {/* Bulk plan change section — ek click se saare shops ka plan badlo */}
@@ -703,18 +801,11 @@ export default function SuperAdminPage(): Element {
               <p className="text-xs text-gray-400 mb-3">Convert all shops to BASIC or PAID in one click.</p>
               {/* Result message — bulk operation complete hone ke baad 4 second ke liye dikhata hai */}
               {bulkPlanResult && <p className="text-xs text-emerald-700 font-medium mb-2">{bulkPlanResult}</p>}
-              <div className="flex gap-2">
-                {/* "All → PAID" button confirm modal kholta hai */}
-                <button
-                  onClick={(): void => setBulkPlanConfirm("PAID")}
-                  className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-sm font-medium py-2 rounded-xl transition"
-                >
-                  All → PAID
-                </button>
+              <div>
                 {/* "All → BASIC" button confirm modal kholta hai */}
                 <button
                   onClick={(): void => setBulkPlanConfirm("BASIC")}
-                  className="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-700 text-sm font-medium py-2 rounded-xl transition"
+                  className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 text-sm font-medium py-2 rounded-xl transition"
                 >
                   All → BASIC
                 </button>
@@ -759,6 +850,51 @@ export default function SuperAdminPage(): Element {
           // Shops ki scrollable list — search se filtered
           <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Registered Shops</p>
+            {serviceRequests.length > 0 && (
+              <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3">
+                <p className="text-sm font-bold text-indigo-900">Service payment requests</p>
+                {serviceRequestError && <p className="text-xs text-red-600">{serviceRequestError}</p>}
+                {serviceRequests.map((request) => (
+                  <div key={request.id} className="rounded-xl border border-gray-100 bg-white p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="font-semibold text-gray-900">{request.shopName} <span className="text-xs font-normal text-gray-500">({request.shopCode})</span></p>
+                        {request.phone && <p className="text-xs text-gray-500">{request.phone}</p>}
+                      </div>
+                      <p className="text-sm font-bold text-emerald-700">{formatMoney(request.amount, request.currency)}</p>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">Owner selected these services; verify payment before approval:</p>
+                    <div className="mt-2 space-y-1">
+                      {request.sections.map((section) => (
+                        <label key={section.code} className="flex items-center gap-2 text-sm text-gray-700">
+                          <input type="checkbox" checked disabled />
+                          <span>{section.displayName}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs text-gray-400">
+                      {request.sections.length} requested services for 30 days · {new Date(request.createdAt).toLocaleString()}
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => void resolveServiceRequest(request.id, "approve")}
+                        disabled={resolvingRequestId !== null}
+                        className="rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+                      >
+                        {resolvingRequestId === request.id ? "Processing..." : "Payment verified — approve"}
+                      </button>
+                      <button
+                        onClick={() => void resolveServiceRequest(request.id, "reject")}
+                        disabled={resolvingRequestId !== null}
+                        className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             {filtered.map((s: SuperAdminShopDto): Element => (
               // Har shop card — name, plan badge, code, location, phone, admin info, aur action buttons
               <div key={s.code} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
@@ -790,6 +926,27 @@ export default function SuperAdminPage(): Element {
                     <span className="ml-3">Recovery: <span className="font-mono text-gray-700">{s.recoveryCode}</span></span>
                   )}
                 </div>
+                {(s.trialEndsAt || s.paidUntil || s.subscriptionLocked) && (
+                  <p className={`mt-1 text-xs ${s.subscriptionLocked ? "font-semibold text-red-600" : "text-gray-500"}`}>
+                    {s.subscriptionLocked
+                      ? "Subscription expired / shop locked"
+                      : `${s.paidUntil ? "PAID until" : "Trial until"} ${new Date(s.paidUntil ?? s.trialEndsAt ?? "").toLocaleDateString()}`}
+                  </p>
+                )}
+                <p className="mt-2 text-xs text-gray-600">
+                  Services: {s.sections.length} configured · {s.sections.filter((section) => section.active).length} paid/enabled
+                </p>
+                {Number.isFinite(Number(paidPrice)) && Number(paidPrice) > 0 && (
+                  <p className="text-xs font-medium text-gray-700">
+                    All services: {s.sections.length} × {formatMoney(Number(paidPrice))} = {formatMoney(Number(paidPrice) * s.sections.length)} / 30 days
+                  </p>
+                )}
+                {s.lastPaymentAmount !== null && s.lastPaymentAmount !== undefined && (
+                  <p className="text-xs text-gray-500">
+                    Last received: {formatMoney(s.lastPaymentAmount, s.lastPaymentCurrency ?? paidCurrency)}
+                    {s.lastPaymentAt ? ` · ${new Date(s.lastPaymentAt).toLocaleDateString()}` : ""}
+                  </p>
+                )}
 
                 {/* Action buttons: QR dikhao, Password reset, Plan change */}
                 <div className="flex flex-wrap gap-2 mt-3">
@@ -815,6 +972,14 @@ export default function SuperAdminPage(): Element {
                   >
                     {s.plan === "PAID" ? "→ BASIC" : "→ PAID"}
                   </button>
+                  {s.plan === "PAID" && (
+                    <button
+                      onClick={(): void => openRenewalFlow(s)}
+                      className="text-sm rounded-lg bg-emerald-50 px-3 py-1.5 text-emerald-700 hover:bg-emerald-100"
+                    >
+                      Renew +30d
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -898,9 +1063,32 @@ export default function SuperAdminPage(): Element {
       )}
 
       {/* Plan change confirm modal — individual shop ka plan upgrade/downgrade */}
+      {renewTarget && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-4 py-3 sm:items-center">
+          <div className="max-h-[90dvh] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-3xl bg-white p-6 sm:rounded-2xl">
+            <h2 className="mb-2 font-bold">Confirm 30-day renewal</h2>
+            <p className="mb-4 text-sm text-gray-600">
+              Enter the received amount and mark the services covered for <b>{renewTarget.name}</b>. This adds 30 PAID days.
+            </p>
+            {renderPaidServiceSelection(renewTarget)}
+            {planMsg && <p className="mb-2 text-xs text-red-600">{planMsg}</p>}
+            <div className="flex flex-col gap-2">
+              <button onClick={() => void confirmRenewal()} disabled={!paidAmountMatchesSelection()}
+                className="w-full rounded-xl bg-emerald-500 py-2.5 font-medium text-white hover:bg-emerald-600 disabled:opacity-50">
+                Confirm payment & renew
+              </button>
+              <button onClick={() => setRenewTarget(null)}
+                className="w-full rounded-xl bg-gray-100 py-2.5 text-sm hover:bg-gray-200">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {planTarget && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center px-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-4 py-3 sm:items-center">
+          <div className="max-h-[90dvh] w-full max-w-sm overflow-y-auto overscroll-contain rounded-t-3xl bg-white p-6 sm:rounded-2xl">
             <h2 className="font-bold mb-2">
               {planTarget.plan === "PAID" ? "Downgrade to BASIC?" : "Upgrade to PAID?"}
             </h2>
@@ -910,19 +1098,20 @@ export default function SuperAdminPage(): Element {
             {/* Downgrade warning (data loss) ya upgrade confirmation — context ke hisaab se */}
             <p className="text-sm text-gray-500 mb-4">
               {planTarget.plan === "PAID"
-                ? "Are you sure? Shop will be downgraded to BASIC. All staff will be deleted. " +
-                  "All services will be disabled — the shop owner will be logged out and forced to choose 1-2 services on next login."
-                : "Payment confirmed? Shop will be upgraded to PAID — all limits removed."}
+                ? "Are you sure? Shop will be locked on BASIC until PAID is activated. Services will be disabled; shop, staff, and history will be preserved."
+                : "Enter the verified payment and mark the services it covers. The shop will be PAID for 30 days."}
             </p>
+            {planTarget.plan === "BASIC" && renderPaidServiceSelection(planTarget)}
             {/* planMsg: agar pichli attempt fail hui thi toh error dikhega */}
             {planMsg && <p className="text-xs text-red-500 mb-2">{planMsg}</p>}
             <div className="flex flex-col gap-2">
               {/* Button color aur label plan ke hisaab se badalta hai */}
               <button
                 onClick={confirmPlanChange}
+                disabled={planTarget.plan === "BASIC" && !paidAmountMatchesSelection()}
                 className={`w-full py-2.5 rounded-xl font-medium text-white ${
                   planTarget.plan === "PAID" ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-500 hover:bg-emerald-600"
-                }`}
+                } disabled:opacity-50`}
               >
                 Yes, {planTarget.plan === "PAID" ? "downgrade" : "upgrade"}
               </button>

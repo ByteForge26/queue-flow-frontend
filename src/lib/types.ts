@@ -323,8 +323,13 @@ export interface ShopDetailDto {
   closeTime: string | null; // Schedule closing time
   operatingDays: string | null; // Active days
   forceServiceSelect: boolean; // true = customer ko koi ek service zaroor select karni hogi
-  tierSystemEnabled: boolean; // true = priority/tier queue system active hai
+  tierSystemEnabled: boolean; // Legacy compatibility field; backend always enforces BASIC restrictions.
   hasPaymentQr: boolean; // true = shop ne payment QR code set kiya hai
+  trialEndsAt: string | null;
+  paidUntil: string | null;
+  subscriptionLocked: boolean;
+  subscriptionReminder: "SEVEN_DAYS" | "ONE_DAY" | null;
+  subscriptionDaysRemaining: number | null;
 }
 
 // SuperAdminShopDto: Platform-level super admin ke liye shop ka summary.
@@ -340,6 +345,24 @@ export interface SuperAdminShopDto {
   adminUsername: string; // Is shop ka admin kaun hai
   plan: string; // Current subscription plan
   sections: SectionDto[]; // Shop ke saare sections
+  trialEndsAt: string | null;
+  paidUntil: string | null;
+  subscriptionLocked: boolean;
+  lastPaymentAmount: number | null;
+  lastPaymentCurrency: string | null;
+  lastPaymentAt: string | null;
+}
+
+export interface ServiceAccessRequestDto {
+  id: number;
+  shopCode: string;
+  shopName: string;
+  phone: string | null;
+  sections: SectionDto[];
+  amount: number;
+  currency: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: string;
 }
 
 // UpdateShopCommand: Admin jab shop settings update karta hai tab bheja jaane wala body.
@@ -375,13 +398,15 @@ export interface ShopSummaryDto {
 // Frontend is config ke basis par features enable/disable karta hai.
 export interface PlatformConfigDto {
   customFieldsEnabled: boolean; // Custom form fields feature on/off
-  tierSystemEnabled: boolean; // Priority queue system on/off
+  tierSystemEnabled: boolean; // Legacy compatibility field; backend always enforces BASIC restrictions.
   showPlanInfoIcon: boolean; // UI mein plan info icon dikhao ya nahi
   showPlanBadge: boolean; // Plan badge (FREE/PAID) dikhao ya nahi
   paidPrice: string; // Paid plan ka price (string mein - currency formatting ke liye)
   paidCurrency: string; // Currency code (e.g., "INR", "USD")
   bannedServiceTypes: string[]; // In service types ko naye shops nahi add kar sakte
   paymentQrEnabled: boolean; // Super Admin ka global switch - agar false hai toh sab shops ke liye payment QR feature disable ho jaayega
+  upgradeContactEnabled: boolean;
+  upgradeContactPhone: string;
 }
 
 // CityDto: Ek city ka representation - dropdown populate karne ke liye.

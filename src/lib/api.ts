@@ -98,6 +98,7 @@ import type {
   StaffStatsDto,
   StaffUserDto,
   SuperAdminShopDto,
+  ServiceAccessRequestDto,
   TicketDto,
   TicketStatus,
   UpdateShopCommand,
@@ -242,11 +243,6 @@ export async function superAdminSetCustomFieldsEnabled(value: boolean): Promise<
   await saApi.patch("/config/custom-fields-enabled", null, { params: { value } });
 }
 
-// SuperAdmin: tier/plan system feature enable/disable karo
-export async function superAdminSetTierSystemEnabled(value: boolean): Promise<void> {
-  await saApi.patch("/config/tier-system-enabled", null, { params: { value } });
-}
-
 // SuperAdmin: UI mein plan info icon dikhao ya chhupao
 export async function superAdminSetShowPlanInfoIcon(value: boolean): Promise<void> {
   await saApi.patch("/config/show-plan-info-icon", null, { params: { value } });
@@ -271,18 +267,46 @@ export async function superAdminSetPaymentQrEnabled(value: boolean): Promise<voi
   await saApi.patch("/config/payment-qr-enabled", null, { params: { value } });
 }
 
-// SuperAdmin: kisi specific shop ka plan change karo
-// keepSectionCodes: plan downgrade pe kaunse sections rakhne hain uski list
+export async function superAdminSetUpgradeContact(enabled: boolean, phone: string): Promise<void> {
+  await saApi.patch("/config/upgrade-contact", null, { params: { enabled, phone } });
+}
+
+// SuperAdmin: plan/payment update karo; PAID request records exactly which services were paid.
 export async function superAdminSetPlan(
   shopCode: string,
   plan: string,
-  keepSectionCodes: string[]
+  keepSectionCodes: string[],
+  amountPaid?: string
 ): Promise<SuperAdminShopDto> {
   const { data } = await saApi.patch(`/shops/${shopCode}/plan`, {
     plan,
     keepSectionCodes,
+    amountPaid,
   });
   return data; // updated shop info wapas milti hai
+}
+
+export async function getServiceAccessRequest(): Promise<ServiceAccessRequestDto | null> {
+  const { data } = await api.get("/admin/shop/service-access-request");
+  return data;
+}
+
+export async function submitServiceAccessRequest(sectionCodes: string[]): Promise<ServiceAccessRequestDto> {
+  const { data } = await api.post("/admin/shop/service-access-request", { sectionCodes });
+  return data;
+}
+
+export async function superAdminGetServiceAccessRequests(): Promise<ServiceAccessRequestDto[]> {
+  const { data } = await saApi.get("/service-access-requests");
+  return data;
+}
+
+export async function superAdminResolveServiceAccessRequest(
+  requestId: number,
+  action: "approve" | "reject"
+): Promise<ServiceAccessRequestDto> {
+  const { data } = await saApi.post(`/service-access-requests/${requestId}/${action}`);
+  return data;
 }
 
 // Diye gaye country ke cities ki list fetch karo (customer signup dropdown ke liye)
@@ -665,9 +689,10 @@ export async function getAdminHistory(): Promise<HistoryDto> {
 // Naya section (queue/service type) add karo shop mein
 // industryType: "QUEUE", "APPOINTMENT", ya koi custom type - section ka behavior decide karta hai
 export async function addSection(
-  industryType: string
+  industryType: string,
+  displayName?: string
 ): Promise<import("./types").AdminOverviewDto> {
-  const { data } = await api.post("/admin/sections", { industryType });
+  const { data } = await api.post("/admin/sections", { industryType, displayName });
   return data; // updated overview milti hai naye section ke saath
 }
 

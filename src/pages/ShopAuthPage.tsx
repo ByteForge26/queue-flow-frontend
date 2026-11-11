@@ -151,7 +151,6 @@ export default function ShopAuthPage() {
       errs.phone = phoneHint(country);
     }
     if (!recoveryCode.trim()) errs.recoveryCode = t("common.required");
-    if (types.length === 0) errs.types = t("auth.pickSection");
     if (!username.trim()) errs.username = t("common.required");
     if (!password.trim()) errs.password = t("common.required");
     setFieldErrors(errs);
@@ -443,8 +442,9 @@ export default function ShopAuthPage() {
               {/* ------------------------------------------------------------- */}
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
-                  {t("auth.facilities")} *
+                  {t("auth.facilities")}
                 </label>
+                <p className="mb-2 text-xs text-slate-500">{t("auth.facilitiesOptionalInfo")}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {SECTION_TYPES.map((st: string) => (
                     <CheckChip
@@ -455,7 +455,6 @@ export default function ShopAuthPage() {
                     />
                   ))}
                 </div>
-                {fe("types") && <p className="text-xs text-red-500 mt-1">{fe("types")}</p>}
               </div>
             </>
           )}
