@@ -303,9 +303,13 @@ export async function superAdminGetServiceAccessRequests(): Promise<ServiceAcces
 
 export async function superAdminResolveServiceAccessRequest(
   requestId: number,
-  action: "approve" | "reject"
+  action: "approve" | "reject",
+  reason?: string
 ): Promise<ServiceAccessRequestDto> {
-  const { data } = await saApi.post(`/service-access-requests/${requestId}/${action}`);
+  const { data } = await saApi.post(
+    `/service-access-requests/${requestId}/${action}`,
+    action === "reject" ? { reason } : undefined
+  );
   return data;
 }
 

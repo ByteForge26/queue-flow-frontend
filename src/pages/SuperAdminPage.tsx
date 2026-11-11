@@ -53,6 +53,8 @@ export default function SuperAdminPage(): Element {
   const [serviceRequests, setServiceRequests] = useState<ServiceAccessRequestDto[]>([]);
   const [resolvingRequestId, setResolvingRequestId] = useState<number | null>(null);
   const [serviceRequestError, setServiceRequestError] = useState("");
+  const [rejectingRequestId, setRejectingRequestId] = useState<number | null>(null);
+  const [serviceRequestRejectionReason, setServiceRequestRejectionReason] = useState("");
 
   // search: Shops list me live search/filter ke liye input value
   const [search, setSearch] = useState("");
@@ -187,12 +189,18 @@ export default function SuperAdminPage(): Element {
     }
   }
 
-  async function resolveServiceRequest(requestId: number, action: "approve" | "reject"): Promise<void> {
+  async function resolveServiceRequest(
+    requestId: number,
+    action: "approve" | "reject",
+    reason?: string
+  ): Promise<void> {
     setResolvingRequestId(requestId);
     setServiceRequestError("");
     try {
-      await superAdminResolveServiceAccessRequest(requestId, action);
+      await superAdminResolveServiceAccessRequest(requestId, action, reason);
       setServiceRequests((current) => current.filter((request) => request.id !== requestId));
+      setRejectingRequestId(null);
+      setServiceRequestRejectionReason("");
       if (action === "approve") {
         const updatedShops = await superAdminListShops();
         setShops(updatedShops);
@@ -875,7 +883,23 @@ export default function SuperAdminPage(): Element {
                     <p className="mt-2 text-xs text-gray-400">
                       {request.sections.length} requested services for 30 days · {new Date(request.createdAt).toLocaleString()}
                     </p>
-                    <div className="mt-3 flex gap-2">
+                    {rejectingRequestId === request.id && (
+                      <div className="mt-3 space-y-2">
+                        <label htmlFor={`service-request-reason-${request.id}`} className="block text-xs font-medium text-gray-700">
+                          Rejection reason (required)
+                        </label>
+                        <textarea
+                          id={`service-request-reason-${request.id}`}
+                          value={serviceRequestRejectionReason}
+                          onChange={(event) => setServiceRequestRejectionReason(event.target.value)}
+                          maxLength={1000}
+                          rows={3}
+                          placeholder="Explain why this payment request is being rejected."
+                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                        />
+                      </div>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         onClick={() => void resolveServiceRequest(request.id, "approve")}
                         disabled={resolvingRequestId !== null}
@@ -884,12 +908,38 @@ export default function SuperAdminPage(): Element {
                         {resolvingRequestId === request.id ? "Processing..." : "Payment verified — approve"}
                       </button>
                       <button
-                        onClick={() => void resolveServiceRequest(request.id, "reject")}
+                        onClick={() => {
+                          if (rejectingRequestId !== request.id) {
+                            setRejectingRequestId(request.id);
+                            setServiceRequestRejectionReason("");
+                            return;
+                          }
+                          if (!serviceRequestRejectionReason.trim()) {
+                            setServiceRequestError("Enter a reason before rejecting this request.");
+                            return;
+                          }
+                          void resolveServiceRequest(request.id, "reject", serviceRequestRejectionReason.trim());
+                        }}
                         disabled={resolvingRequestId !== null}
                         className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200 disabled:opacity-50"
                       >
-                        Reject
+                        {rejectingRequestId === request.id
+                          ? (resolvingRequestId === request.id ? "Rejecting..." : "Confirm rejection")
+                          : "Reject"}
                       </button>
+                      {rejectingRequestId === request.id && (
+                        <button
+                          onClick={() => {
+                            setRejectingRequestId(null);
+                            setServiceRequestRejectionReason("");
+                            setServiceRequestError("");
+                          }}
+                          disabled={resolvingRequestId !== null}
+                          className="rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

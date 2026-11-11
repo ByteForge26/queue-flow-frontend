@@ -844,7 +844,7 @@ export default function AdminPage() {
                     <span className="shrink-0 text-xs font-semibold text-brand">{t("admin.upgradeContactAction")}</span>
                   </a>
                 )}
-                {serviceAccessRequest ? (
+                {serviceAccessRequest?.status === "PENDING" ? (
                   <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
                     <p className="text-sm font-semibold text-amber-900">{t("admin.serviceRequestPending")}</p>
                     <p className="mt-1 text-xs text-amber-800">
@@ -854,6 +854,13 @@ export default function AdminPage() {
                   </div>
                 ) : (
                   <>
+                    {serviceAccessRequest?.status === "REJECTED" && (
+                      <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3">
+                        <p className="text-sm font-semibold text-red-900">{t("admin.serviceRequestRejected")}</p>
+                        <p className="mt-1 text-xs text-red-800">{serviceAccessRequest.rejectionReason}</p>
+                        <p className="mt-1 text-xs text-red-700">{t("admin.serviceRequestResubmitHint")}</p>
+                      </div>
+                    )}
                     <div className="mt-3 max-h-48 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-2">
                       {(overview?.sections ?? []).map((section) => (
                         <label key={section.sectionCode} className={`flex items-center gap-2 rounded-lg p-2 text-sm ${

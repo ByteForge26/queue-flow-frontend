@@ -363,6 +363,7 @@ export interface ServiceAccessRequestDto {
   currency: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
   createdAt: string;
+  rejectionReason: string | null;
 }
 
 // UpdateShopCommand: Admin jab shop settings update karta hai tab bheja jaane wala body.
