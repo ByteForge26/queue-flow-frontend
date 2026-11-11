@@ -137,9 +137,10 @@ export default function App() {
   }, [pathname]);
 
   return (
-    // <Routes> ek special wrapper hai jo browser ki current URL check karta hai
-    // aur usse match karne wala pehla <Route> render karta hai.
-    <Routes>
+    <div className="app-viewport">
+      {/* <Routes> ek special wrapper hai jo browser ki current URL check karta hai
+          aur usse match karne wala pehla <Route> render karta hai. */}
+      <Routes>
 
       {/* HOME PAGE — "/" URL pe LandingPage dikhao */}
       <Route path="/" element={<LandingPage />} />
@@ -208,6 +209,7 @@ export default function App() {
           "replace" isliye taaki history mein galat URL na save ho */}
       <Route path="*" element={<Navigate to="/" replace />} />
 
-    </Routes>
+      </Routes>
+    </div>
   );
 }

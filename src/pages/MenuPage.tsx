@@ -392,7 +392,7 @@ export default function MenuPage(): JSX.Element {
           {t("common.backDashboard")}
         </Link>
 
-        <h1 className="mt-2 text-3xl font-bold">
+        <h1 className="mt-2 break-words text-2xl font-bold sm:text-3xl">
           {t("menu.title", { section: businessDisplayName || sectionCode })}
         </h1>
 
@@ -411,9 +411,9 @@ export default function MenuPage(): JSX.Element {
       )}
 
       {/* Main Layout: Sidebar + Content */}
-      <div className="flex gap-4 mb-5">
+      <div className="mb-5 flex min-w-0 flex-col gap-4 sm:flex-row">
         {/* LEFT SIDEBAR: Service Sections List */}
-        <div className="w-48 flex-shrink-0">
+        <div className="w-full min-w-0 sm:w-48 sm:flex-shrink-0">
           <Card className="border border-indigo-100 bg-gradient-to-b from-indigo-50 to-white">
             <h3 className="mb-1 text-lg font-bold text-indigo-900">📋 Services</h3>
 
@@ -520,7 +520,7 @@ export default function MenuPage(): JSX.Element {
         </div>
 
         {/* RIGHT CONTENT: Add Item Form + Items list */}
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           {/* --- "Add New Item" Form Block ---
               Naya menu item add karne ka form.
               Name, price, estimated minutes, description aur category ke inputs hain.
@@ -561,7 +561,7 @@ export default function MenuPage(): JSX.Element {
             </div>
 
             {/* Doosri row: description aur category (dono optional fields hain) */}
-            <div className="grid grid-cols-2 gap-2 mt-2">
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <input
                 value={desc}
                 placeholder={t("menu.descPlaceholder")}
@@ -588,7 +588,7 @@ export default function MenuPage(): JSX.Element {
             {optionsEnabled && (
               <div className="mt-2 space-y-2">
                 {options.map((option, index) => (
-                  <div key={index} className="flex gap-2">
+                  <div key={index} className="flex flex-col gap-2 sm:flex-row">
                     <input
                       value={option.name}
                       maxLength={100}
@@ -606,7 +606,7 @@ export default function MenuPage(): JSX.Element {
                       onChange={(e): void => setOptions((prev) => prev.map((value, i) =>
                         i === index ? { ...value, price: e.target.value } : value
                       ))}
-                      className="w-32 border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm sm:w-32"
                     />
                     <button
                       type="button"
@@ -719,7 +719,7 @@ export default function MenuPage(): JSX.Element {
                     {eOptionsEnabled && (
                       <div className="sm:col-span-4 space-y-2">
                         {eOptions.map((option, index) => (
-                          <div key={index} className="flex gap-2">
+                          <div key={index} className="flex flex-col gap-2 sm:flex-row">
                             <input
                               value={option.name}
                               maxLength={100}
@@ -737,7 +737,7 @@ export default function MenuPage(): JSX.Element {
                               onChange={(event): void => setEOptions((prev) => prev.map((value, i) =>
                                 i === index ? { ...value, price: event.target.value } : value
                               ))}
-                              className="w-32 border border-gray-200 rounded-xl px-3 py-2 text-sm"
+                              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm sm:w-32"
                             />
                             <button
                               type="button"
@@ -775,9 +775,9 @@ export default function MenuPage(): JSX.Element {
                   // --- Normal Item View (Read Mode) ---
                   // Item ka naam, price, estimated time, category badge, description dikhata hai
                   // aur right side mein Edit / Enable-Disable / Delete buttons hain
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     {/* Left side: item ki details */}
-                    <div>
+                    <div className="min-w-0 break-words">
                       <div className="font-medium">
                         {it.name}
                         {/* Agar item inactive hai to "(Disabled)" jaisa tag naam ke saath dikhao */}
@@ -787,7 +787,7 @@ export default function MenuPage(): JSX.Element {
                       </div>
 
                       {/* Price aur estimated time, aur agar category ho to colored badge */}
-                      <div className="text-xs text-gray-400 flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
                         <span>
                           {it.options?.length
                             ? it.options.map((option) => `${option.name} ₹${option.price}`).join(" / ")
@@ -808,7 +808,7 @@ export default function MenuPage(): JSX.Element {
                     </div>
 
                     {/* Right side: action buttons */}
-                    <div className="flex items-center gap-3 text-sm">
+                    <div className="flex flex-wrap items-center gap-3 text-sm">
                       {/* Move to section: isi item ko kisi doosre section (ya Uncategorized) mein shift karo */}
                       <select
                         value={it.serviceSectionId ?? ""}

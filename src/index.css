@@ -19,21 +19,27 @@
 
 html {
   background: var(--bg-primary);
-}
-
-body {
-  overflow-x: clip;
+  min-height: 100%;
+  overscroll-behavior-x: none;
 }
 
 body {
   @apply min-h-screen antialiased text-slate-900;
   margin: 0;
+  overflow-x: clip;
   background: var(--bg-primary);
   font-family: Inter, "Segoe UI", sans-serif;
 }
 
 #root {
+  min-height: 100%;
+}
+
+.app-viewport {
   min-height: 100vh;
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 ::selection {
@@ -45,6 +51,8 @@ select,
 textarea,
 button {
   font: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 input,
@@ -121,4 +129,37 @@ textarea:focus {
 :where(button, a, input, select, textarea):focus-visible {
   outline: 3px solid rgba(79, 70, 229, 0.24);
   outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 1rem;
+    min-height: 1rem;
+  }
+}
+
+@media (hover: none) {
+  button:active,
+  [role="button"]:active {
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

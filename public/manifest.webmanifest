@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "Meri Turn — Your Order. Your Turn.",
+  "short_name": "Meri Turn",
+  "description": "Order smart, track live, wait less.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f2f4f8",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/meriturn.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
