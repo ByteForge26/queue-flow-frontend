@@ -116,17 +116,17 @@ export default function MyOrdersPage() {
           <div className="space-y-2 mb-6 overflow-y-auto pr-1 max-h-[40vh]">
             {localOrders.map((o: LocalOrder) => {
               const card = (
-                <Card className={`flex items-center justify-between border border-slate-200/80 bg-white/90 py-3 ${
+                <Card className={`flex items-center justify-between gap-3 border border-slate-200/80 bg-white/90 py-3 ${
                   o.trackingToken ? "cursor-pointer transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_12px_28px_rgba(79,70,229,0.08)]" : ""
                 }`}>
-                  <div>
+                  <div className="min-w-0 break-words">
                     <div className="text-sm font-semibold text-slate-800">#{o.ticketId}</div>
                     <div className="mt-1 text-xs text-slate-500">{o.sectionName}</div>
                     {!o.trackingToken && (
                       <div className="mt-1 text-xs text-slate-400">{t("myorders.trackingUnavailable")}</div>
                     )}
                   </div>
-                  <div className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
+                  <div className="shrink-0 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
                     {o.placedTime ?? ""}
                   </div>
                 </Card>
@@ -202,8 +202,8 @@ export default function MyOrdersPage() {
                 {history.orders.map((t: TicketDto) => (
                   // Har order card link hai – click karo to live tracking page
                   <Link key={t.id} to={`/track/${t.trackingToken}`}>
-                    <Card className="flex cursor-pointer items-center justify-between border border-slate-200/80 bg-white/90 py-3 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_12px_28px_rgba(79,70,229,0.08)]">
-                      <div>
+                    <Card className="flex items-center justify-between gap-3 border border-slate-200/80 bg-white/90 py-3 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_12px_28px_rgba(79,70,229,0.08)]">
+                      <div className="min-w-0 break-words">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-slate-800">#{t.id}</span>
                           <StatusBadge status={t.status} />
@@ -212,7 +212,7 @@ export default function MyOrdersPage() {
                           {t.items.map((i: TicketItemDto): string => `${i.itemName} x${i.quantity}`).join(", ") || "–"}
                         </div>
                       </div>
-                      <div className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                      <div className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
                         {t.placedTime}
                       </div>
                     </Card>

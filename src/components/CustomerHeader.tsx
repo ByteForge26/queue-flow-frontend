@@ -22,31 +22,31 @@ export default function CustomerHeader({ shopCode }: { shopCode?: string }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+      <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <Link
           to="/"
-          className="flex min-h-11 items-center gap-2 rounded-lg px-2 font-semibold text-slate-900 transition hover:bg-slate-50"
+          className="flex min-h-11 min-w-0 items-center gap-2 rounded-lg px-2 font-semibold text-slate-900 transition hover:bg-slate-50"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-xs text-white">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-xs text-white">
             MT
           </span>
-          {t("app.name")}
+          <span className="truncate">{t("app.name")}</span>
         </Link>
 
-        <nav className="flex items-center gap-1.5 text-sm sm:gap-2">
+        <nav className="flex w-full items-center gap-1 text-xs sm:w-auto sm:gap-2 sm:text-sm">
           <Link
             to="/customer"
-            className="inline-flex min-h-11 items-center rounded-lg px-3 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+            className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-lg px-2 text-center text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:flex-none sm:px-3"
           >
             {t("header.changeLocation")}
           </Link>
           <Link
             to={shopCode ? `/my-orders/${shopCode}` : "/customer"}
-            className="inline-flex min-h-11 items-center rounded-lg px-3 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+            className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-lg px-2 text-center text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:flex-none sm:px-3"
           >
             {t("header.myOrders")}
           </Link>
-          <div className="ml-1">
+          <div className="ml-1 shrink-0">
             <LanguageToggle />
           </div>
         </nav>

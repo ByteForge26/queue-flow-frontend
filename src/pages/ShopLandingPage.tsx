@@ -131,12 +131,12 @@ export default function ShopLandingPage() {
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="premium-shell mx-auto max-w-3xl overflow-hidden p-5 sm:p-6">
           <div className="mb-6 rounded-2xl bg-slate-900 p-5 text-white shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-[0.2em] text-indigo-100">Marketplace</div>
-                <h1 className="mt-2 text-3xl font-black">{shop.name}</h1>
+                <h1 className="mt-2 break-words text-2xl font-black sm:text-3xl">{shop.name}</h1>
               </div>
-              <div className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-100">
+              <div className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-100">
                 {shop.open ? "Open" : "Offline"}
               </div>
             </div>
@@ -201,17 +201,17 @@ export default function ShopLandingPage() {
             return (
               <Card
                 key={s.code}
-                className={`flex items-center justify-between border-l-4 bg-gradient-to-r from-white to-slate-50 ${SECTION_BORDER[s.industryType] ?? SECTION_BORDER.OTHER} ${
+                className={`flex items-start justify-between gap-3 border-l-4 bg-gradient-to-r from-white to-slate-50 sm:items-center ${SECTION_BORDER[s.industryType] ?? SECTION_BORDER.OTHER} ${
                   disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:-translate-y-0.5"
                 }`}
                 onClick={disabled ? undefined : () => navigate(`/order/${s.code}?shop=${shop.code}`)}
               >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-2xl shadow-inner">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-2xl shadow-inner">
                     {ICON[s.industryType] ?? ICON.OTHER}
                   </span>
-                  <div>
-                    <div className="font-semibold text-slate-900">{s.displayName}</div>
+                  <div className="min-w-0">
+                    <div className="break-words font-semibold text-slate-900">{s.displayName}</div>
                     <div className="text-xs uppercase tracking-[0.15em] text-slate-400">{s.industryType}</div>
                   </div>
                 </div>
@@ -228,7 +228,7 @@ export default function ShopLandingPage() {
           })}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link to={`/my-orders/${shop.code}`} className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-brand transition hover:border-indigo-300 hover:bg-indigo-100">
             {t("shop.myOrdersLink")}
           </Link>

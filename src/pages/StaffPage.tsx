@@ -493,14 +493,14 @@ export default function StaffPage(): Element {
               <p className="text-teal-100 text-sm">{subtitle}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
             {/* Section switcher dropdown — sirf tab dikhta hai jab 1 se zyada sections hon */}
             {/* onChange par navigate() call karta hai taaki URL update ho aur page re-render ho */}
             {sections.length > 1 && (
               <select
                 value={sectionCode}
                 onChange={(e: ChangeEvent<HTMLSelectElement>) => navigate(`/staff/${e.target.value}`)}
-                className="w-full border border-teal-400 bg-teal-700/50 text-white rounded-xl px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/40 sm:w-auto"
+                className="col-span-2 w-full border border-teal-400 bg-teal-700/50 text-white rounded-xl px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/40 sm:col-span-1 sm:w-auto"
               >
                 {sections.map((s: SectionDto): Element => (
                   <option key={s.code} value={s.code} className="text-gray-800 bg-white">
@@ -511,22 +511,24 @@ export default function StaffPage(): Element {
             )}
             {/* Admin dashboard button — sirf Admin role ke liye dikhta hai */}
             {isAdmin && (
-              <Button variant="ghost" onClick={() => navigate(`/admin/${auth!.shopCode}`)}>
+              <Button variant="ghost" onClick={() => navigate(`/admin/${auth!.shopCode}`)} className="w-full sm:w-auto">
                 {t("common.dashboard")}
               </Button>
             )}
             {/* Manual refresh button — WebSocket miss kar le to bhi data fresh ho jaaye */}
-            <Button variant="ghost" onClick={refresh}>
+            <Button variant="ghost" onClick={refresh} className="w-full sm:w-auto">
               {t("common.refresh")}
             </Button>
             {/* Logout — auth token clear karo aur /shop par bhejo */}
             {auth && (
-              <Button variant="ghost" onClick={logout}>
+              <Button variant="ghost" onClick={logout} className="w-full sm:w-auto">
                 {t("common.logout")}
               </Button>
             )}
             {/* Language toggle — Hindi/English switch */}
-            <LanguageToggle />
+            <div className="col-span-2 sm:col-span-1">
+              <LanguageToggle />
+            </div>
           </div>
         </div>
       </div>
@@ -647,8 +649,8 @@ export default function StaffPage(): Element {
               const next: { status: TicketStatus; label: string } | null = nextStep(ord.status);
               return (
                 // ORDER CARD — ek ticket ki saari info + action buttons
-                <Card key={ord.id} className="flex items-center justify-between">
-                  <div>
+                <Card key={ord.id} className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 break-words">
                     {/* Order ID aur current status badge */}
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">#{ord.id}</span>
@@ -680,7 +682,7 @@ export default function StaffPage(): Element {
                     {/* Extra custom fields, comment, payment info, cancel reason */}
                     <OrderExtras ticket={ord} />
                   </div>
-                  <div className="flex flex-col gap-2 items-end">
+                  <div className="flex items-center justify-end gap-3 sm:flex-col sm:items-end">
                     {/* Advance button — next step ka label dikhata hai (e.g. "Start", "Ready") */}
                     {/* Sirf tab dikhta hai jab koi agla step ho */}
                     {next && (
@@ -712,8 +714,8 @@ export default function StaffPage(): Element {
         <div className="space-y-3 overflow-y-auto pr-1 max-h-[60vh]">
           {futureQueue.map((ord: TicketDto): Element => (
             // FUTURE ORDER CARD
-            <Card key={ord.id} className="flex items-center justify-between">
-              <div>
+            <Card key={ord.id} className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 break-words">
                 {/* Order ID aur scheduled time badge (indigo color) */}
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">#{ord.id}</span>
@@ -744,7 +746,7 @@ export default function StaffPage(): Element {
               {/* Future orders mein sirf cancel ka option — advance nahi hota abhi */}
               <button
                 onClick={(): Promise<void> => cancel(ord)}
-                className="text-xs text-red-400 hover:text-red-600"
+                className="self-end text-xs text-red-400 hover:text-red-600 sm:self-auto"
               >
                 {t("common.cancel")}
               </button>
@@ -950,8 +952,8 @@ function HistoryList({
         <div className="space-y-2 overflow-y-auto pr-1 max-h-[50vh]">
           {filtered.map((ord: TicketDto): Element => (
             // HISTORY ORDER CARD — completed/cancelled order ka snapshot
-            <Card key={ord.id} className="flex items-center justify-between py-3">
-              <div>
+            <Card key={ord.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 break-words">
                 {/* Order ID aur final status badge */}
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">#{ord.id}</span>
@@ -970,7 +972,7 @@ function HistoryList({
                 <OrderExtras ticket={ord} />
               </div>
               {/* Right side — amount aur order placement time */}
-              <div className="text-right">
+              <div className="flex items-center justify-between gap-3 text-left sm:block sm:text-right">
                 {/* Total amount — sirf tab dikhao jab > 0 ho */}
                 {(ord.totalAmount ?? 0) > 0 && <div className="text-sm font-semibold text-gray-700">₹{ord.totalAmount}</div>}
                 {/* Order date (e.g. "12 Jun") */}

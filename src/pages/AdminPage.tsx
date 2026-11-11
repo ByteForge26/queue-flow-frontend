@@ -662,7 +662,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="admin-dashboard mx-auto min-h-screen max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
+    <div className="admin-dashboard mx-auto min-h-screen max-w-6xl px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
       {/* Save success toast */}
       {shopDetailMsg && shopDetailMsg.includes("✓") && (
         <div className="fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-medium text-white shadow-lg">
@@ -671,29 +671,31 @@ export default function AdminPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-800 border-l-4 border-l-brand bg-slate-900 px-5 py-4 text-white shadow-[0_10px_28px_rgba(15,23,42,0.18)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
+      <div className="rounded-2xl border border-slate-800 border-l-4 border-l-brand bg-slate-900 px-4 py-4 text-white shadow-[0_10px_28px_rgba(15,23,42,0.18)] sm:px-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-200">Admin dashboard</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white">{overview?.shopName ?? shopCode}</h1>
+            <h1 className="mt-1 break-words text-xl font-semibold tracking-tight text-white sm:text-2xl">{overview?.shopName ?? shopCode}</h1>
             <p className="mt-1 text-sm text-slate-300">{t("admin.adminRole")}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={refresh}>
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
+            <Button variant="ghost" onClick={refresh} className="w-full sm:w-auto">
               {t("common.refresh")}
             </Button>
             {auth && (
-              <Button variant="ghost" onClick={logout}>
+              <Button variant="ghost" onClick={logout} className="w-full sm:w-auto">
                 {t("common.logout")}
               </Button>
             )}
-            <LanguageToggle />
+            <div className="col-span-2 sm:col-span-1">
+              <LanguageToggle />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Tab content — padded bottom for sticky nav */}
-      <div className="pb-20 pt-4">
+      <div className="pb-36 pt-4 sm:pb-20">
 
         {/* ── OVERVIEW TAB ── */}
         {adminTab === "overview" && (
@@ -910,8 +912,8 @@ export default function AdminPage() {
                             )}
                           </div>
                         )}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="font-semibold">
+                        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0 break-words font-semibold">
                             {s.displayName}
                             {s.industryType === "GENERAL" && (
                               <button onClick={() => openGeneralRename(s)} className="ml-2 text-xs font-normal text-brand hover:underline">
@@ -925,37 +927,37 @@ export default function AdminPage() {
                               <span className="text-xs font-normal text-red-500 ml-2">{t("admin.serviceBannedTag")}</span>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 text-sm">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                             {!s.globallyBanned && (
-                              <Link to={`/staff/${s.sectionCode}`} className="text-brand hover:underline">
+                              <Link to={`/staff/${s.sectionCode}`} className="inline-flex min-h-9 items-center text-brand hover:underline">
                                 {t("admin.liveOrders")}
                               </Link>
                             )}
-                            <Link to={`/admin/${shopCode}/menu/${s.sectionCode}`} className="text-brand hover:underline">
+                            <Link to={`/admin/${shopCode}/menu/${s.sectionCode}`} className="inline-flex min-h-9 items-center text-brand hover:underline">
                               {t("admin.menuLink")}
                             </Link>
-                            <Link to={`/admin/${shopCode}/fields/${s.sectionCode}`} className="text-brand hover:underline">
+                            <Link to={`/admin/${shopCode}/fields/${s.sectionCode}`} className="inline-flex min-h-9 items-center text-brand hover:underline">
                               {t("admin.fieldsLink")}
                             </Link>
                             <button
                               onClick={() => !enableBlocked && toggleSection(s.sectionCode, !s.active)}
                               disabled={enableBlocked}
-                              className={`${enableBlocked ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:underline"}`}
+                              className={`inline-flex min-h-9 items-center ${enableBlocked ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:underline"}`}
                             >
                               {s.active ? t("common.disable") : t("common.enable")}
                             </button>
                             {s.hasOrders ? (
-                              <button onClick={() => handleDeleteClick(s)} className="text-red-400 hover:text-red-600">
+                              <button onClick={() => handleDeleteClick(s)} className="inline-flex min-h-9 items-center text-red-400 hover:text-red-600">
                                 {t("common.delete")}
                               </button>
                             ) : (
-                              <button onClick={() => removeSection(s)} className="text-red-400 hover:text-red-600">
+                              <button onClick={() => removeSection(s)} className="inline-flex min-h-9 items-center text-red-400 hover:text-red-600">
                                 {t("common.remove")}
                               </button>
                             )}
                             <button
                               onClick={() => setSectionInfoOpen(sectionInfoOpen === s.sectionCode ? null : s.sectionCode)}
-                              className="text-gray-300 hover:text-gray-500 text-base leading-none ml-1"
+                              className="inline-flex min-h-9 min-w-9 items-center justify-center text-base leading-none text-gray-300 hover:text-gray-500"
                             >
                               ℹ️
                             </button>
@@ -1423,8 +1425,8 @@ export default function AdminPage() {
           </div>{/* end pb-20 content area */}
 
           {/* ── BOTTOM TAB BAR ── */}
-          <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 shadow-[0_-4px_16px_rgba(15,23,42,0.06)] backdrop-blur">
-            <div className="mx-auto grid max-w-3xl grid-cols-6 gap-1 px-2 py-1">
+          <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(15,23,42,0.06)] backdrop-blur">
+            <div className="mx-auto grid max-w-3xl grid-cols-3 gap-1 px-2 py-1 sm:grid-cols-6">
               {(
                 [
                   { key: "overview", icon: "🏠", label: "Overview" },
@@ -1438,7 +1440,7 @@ export default function AdminPage() {
                 <button
                   key={key}
                   onClick={() => changeAdminTab(key)}
-                  className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors sm:min-h-[52px] sm:flex-row sm:gap-2 sm:px-3 sm:text-xs ${
+                  className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[11px] font-semibold transition-colors sm:min-h-[52px] sm:flex-row sm:gap-2 sm:px-3 sm:text-xs ${
                     adminTab === key
                       ? "bg-brand text-white shadow-sm hover:bg-brand-dark"
                       : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"

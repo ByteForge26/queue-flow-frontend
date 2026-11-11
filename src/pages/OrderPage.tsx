@@ -743,7 +743,7 @@ function ItemRow({
 }) {
   const options = item.options ?? [];
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/95 px-3 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_14px_30px_rgba(79,70,229,0.08)]">
+    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 px-3 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_14px_30px_rgba(79,70,229,0.08)] sm:flex-row sm:items-center sm:justify-between">
       {/* Item ki left side info — naam, price, avg time, description */}
       <div className="min-w-0 pr-3">
         <div className="font-semibold text-gray-800 leading-tight">{item.name}</div>
@@ -760,12 +760,12 @@ function ItemRow({
       </div>
 
       {/* Quantity controls — Minus button, current count, Plus button */}
-      <div className="flex items-center gap-2.5 shrink-0">
+      <div className="flex min-w-0 items-center gap-2.5 sm:shrink-0">
         {options.length > 0 && (
           <select
             value={selectedOption}
             onChange={(event): void => onOptionChange(event.target.value)}
-            className="max-w-32 rounded-lg border border-gray-200 px-2 py-1.5 text-sm"
+            className="min-w-0 flex-1 rounded-lg border border-gray-200 px-2 py-2 text-sm sm:w-32 sm:flex-none"
             aria-label={`Choose ${item.name} option`}
           >
             <option value="">Choose option</option>

@@ -425,16 +425,16 @@ export default function TrackPage(): Element {
 
         <div className="mb-6 rounded-2xl bg-slate-900 p-5 text-white shadow-sm">
 
-          <div className="flex items-center justify-between gap-3">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-100">
                 {t("track.orderNo", { id: ticket.id })}
               </p>
-              <h1 className="mt-2 text-2xl font-bold leading-tight">
+              <h1 className="mt-2 break-words text-2xl font-bold leading-tight">
                 {ticket.customerName}
               </h1>
             </div>
-            <div className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
+            <div className="self-start rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium backdrop-blur-sm sm:self-auto">
               <StatusBadge status={ticket.status} />
             </div>
           </div>

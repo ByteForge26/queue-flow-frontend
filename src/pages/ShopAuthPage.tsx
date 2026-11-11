@@ -271,8 +271,8 @@ export default function ShopAuthPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-xl">
-        <div className="mb-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-lg font-bold text-white">
               MT
             </div>
@@ -281,10 +281,10 @@ export default function ShopAuthPage() {
               <div className="font-semibold text-slate-900">{t("auth.title")}</div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <Link
               to="/"
-              className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex min-h-11 items-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:px-4"
             >
               ← {t("auth.backHome")}
             </Link>
