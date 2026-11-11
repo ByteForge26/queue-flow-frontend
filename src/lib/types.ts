@@ -443,6 +443,7 @@ export interface SectionStatsDto {
   sales: SalesStatsDto; // Revenue stats - embedded object
   globallyBanned: boolean; // Platform ne ban kiya hai
   deletionScheduledAt: string | null; // Scheduled deletion time - null agar koi plan nahi
+  paidAccessCovered: boolean; // Current PAID plan ya trial mein service included hai
 }
 
 // GlobalBanStatusDto: Platform admin ka ban/restriction status.

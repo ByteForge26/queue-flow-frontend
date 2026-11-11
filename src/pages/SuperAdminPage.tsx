@@ -759,12 +759,12 @@ export default function SuperAdminPage(): Element {
             <div className="pt-3 border-t border-gray-100 space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium">Upgrade payment contact</p>
-                  <p className="text-xs text-gray-400">This number is shown in the shop owner's upgrade screen.</p>
+                  <p className="text-sm font-medium">Support &amp; payment WhatsApp number</p>
+                  <p className="text-xs text-gray-400">Show this number for PAID requests, support queries, and password recovery.</p>
                 </div>
                 <button
                   type="button"
-                  aria-label="Toggle upgrade contact visibility"
+                  aria-label="Toggle WhatsApp support contact visibility"
                   aria-pressed={upgradeContactEnabled}
                   onClick={() => setUpgradeContactEnabledState((enabled) => !enabled)}
                   className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
@@ -782,7 +782,7 @@ export default function SuperAdminPage(): Element {
                   inputMode="tel"
                   value={upgradeContactPhone}
                   onChange={(event: ChangeEvent<HTMLInputElement>) => setUpgradeContactPhoneState(event.target.value)}
-                  placeholder="UPI/payment contact number"
+                  placeholder="Support / payment WhatsApp number"
                   className="min-w-0 flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm"
                 />
                 <button

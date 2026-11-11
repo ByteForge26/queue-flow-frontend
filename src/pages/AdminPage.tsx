@@ -74,6 +74,18 @@ export default function AdminPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const auth = getAuth();
   const t = useT();
+  const supportDetails = (subject: string, detail: string): string => [
+    `Request: ${subject}`,
+    `Shop name: ${shopDetail?.name ?? "[Shop name]"}`,
+    `Shop code: ${shopCode || "[Shop code]"}`,
+    `Owner username: ${auth?.username ?? "[Owner username]"}`,
+    `Registered contact phone: ${shopDetail?.phone ?? "[Contact phone]"}`,
+    `Details: ${detail}`,
+  ].join("\n");
+  const supportWhatsAppHref = (subject: string, detail: string): string =>
+    `https://wa.me/${platformConfig.upgradeContactPhone.replace(/\D/g, "")}?text=${encodeURIComponent(supportDetails(subject, detail))}`;
+  const supportEmailHref = (email: string, subject: string, detail: string): string =>
+    `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(supportDetails(subject, detail))}`;
   const tabParam = searchParams.get("tab");
   const adminTab: AdminTab = isAdminTab(tabParam) ? tabParam : "overview";
 
@@ -135,6 +147,10 @@ export default function AdminPage() {
   // shop details edit
   const [shopDetail, setShopDetail] = useState<ShopDetailDto | null>(null);
   const subscriptionLocked = shopDetail?.subscriptionLocked ?? false;
+  const isTrial = shopDetail?.plan === "PAID"
+    && !shopDetail.paidUntil
+    && !!shopDetail.trialEndsAt
+    && !subscriptionLocked;
   const subscriptionEndsAt = shopDetail?.paidUntil ?? shopDetail?.trialEndsAt ?? null;
   const subscriptionEndLabel = subscriptionEndsAt
     ? new Date(subscriptionEndsAt).toLocaleDateString()
@@ -492,6 +508,8 @@ export default function AdminPage() {
         setSectionMsg(t("admin.serviceTypeBanned"));
       } else if (serverMsg?.includes("maximum 10")) {
         setSectionMsg(t("admin.paidServiceLimit"));
+      } else if (serverMsg?.includes("PAID access is required")) {
+        setSectionMsg(t("admin.serviceAddSubscriptionRequired"));
       } else if (serverMsg?.includes("already exists")) {
         setSectionMsg(t("admin.duplicateCustomService"));
       } else if (status === 409) {
@@ -807,6 +825,25 @@ export default function AdminPage() {
               <div className="mt-5 border-t border-slate-100 pt-4 text-left">
                 <h3 className="font-semibold text-slate-800">{t("admin.serviceRequestTitle")}</h3>
                 <p className="mt-1 text-xs text-slate-600">{t("admin.serviceRequestDescription")}</p>
+                {platformConfig.upgradeContactEnabled && platformConfig.upgradeContactPhone && (
+                  <a
+                    href={supportWhatsAppHref(
+                      "Service access/payment",
+                      `Selected services: ${(overview?.sections ?? [])
+                        .filter((section) => requestSelectedCodes.includes(section.sectionCode))
+                        .map((section) => section.displayName).join(", ") || "[Select services]"}; amount: ${formatPlanAmount(requestedServiceTotal, platformConfig.paidCurrency)}`
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-brand/20 bg-brand/5 px-3 py-2.5 hover:bg-brand/10"
+                  >
+                    <span className="min-w-0">
+                      <span className="block text-xs text-slate-500">{t("admin.upgradeContactLabel")}</span>
+                      <span className="break-all text-sm font-semibold text-brand">{platformConfig.upgradeContactPhone}</span>
+                    </span>
+                    <span className="shrink-0 text-xs font-semibold text-brand">{t("admin.upgradeContactAction")}</span>
+                  </a>
+                )}
                 {serviceAccessRequest ? (
                   <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
                     <p className="text-sm font-semibold text-amber-900">{t("admin.serviceRequestPending")}</p>
@@ -1012,12 +1049,32 @@ export default function AdminPage() {
               );
               return (
                 <Card className="mb-4 border-t-4 border-t-indigo-300">
-                  {isPaid && (
-                    <p className="mb-3 text-xs text-slate-500">
-                      {t("admin.paidServiceCount", { count: totalCount })}
+                  {isTrial && (
+                    <div className="mb-3 space-y-1">
+                      <p className="text-xs text-slate-500">
+                        {t("admin.trialServiceCount", { count: totalCount })}
+                      </p>
+                      <p className="text-xs text-emerald-700">{t("admin.trialServiceHint")}</p>
+                    </div>
+                  )}
+                  {isPaid && !isTrial && (
+                    <div className="mb-3 space-y-1">
+                      <p className="text-xs text-slate-500">
+                        {t("admin.paidServiceCount", { count: totalCount })}
+                      </p>
+                      <p className="text-xs text-amber-700">{t("admin.paidServiceEntitlementHint")}</p>
+                    </div>
+                  )}
+                  {paidMaxReached && (
+                    <p className="mb-3 text-sm text-amber-700">
+                      {isTrial ? t("admin.trialServiceLimit") : t("admin.paidServiceLimit")}
                     </p>
                   )}
-                  {paidMaxReached && <p className="mb-3 text-sm text-amber-700">{t("admin.paidServiceLimit")}</p>}
+                  {globallyBannedTypes.size > 0 && (
+                    <p className="mb-3 text-xs text-red-600">
+                      {t("admin.serviceTypesBannedHint", { types: [...globallyBannedTypes].join(", ") })}
+                    </p>
+                  )}
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="flex items-end gap-2">
                       <div className="min-w-0 flex-1">
@@ -1056,7 +1113,7 @@ export default function AdminPage() {
                       </Button>
                     </div>
                   </div>
-                  {available.length === 0 && <p className="mt-2 text-xs text-gray-400">{t("admin.allServicesAdded")}</p>}
+                  {available.length === 0 && <p className="mt-2 text-xs text-gray-500">{t("admin.noServiceTypesAvailable")}</p>}
                   {sectionMsg && <p className={`text-xs mt-2 ${sectionMsg === t("admin.serviceTypeBanned")
                     ? "text-red-500 font-medium" : "text-gray-500"}`}>{sectionMsg}</p>}
                 </Card>
@@ -1098,7 +1155,11 @@ export default function AdminPage() {
                               </button>
                             )}
                             {!s.active && !s.globallyBanned && (
-                              <span className="text-xs font-normal text-gray-400 ml-2">{t("admin.disabledTag")}</span>
+                              <span className="text-xs font-normal text-gray-400 ml-2">
+                                {t("admin.disabledTag")}
+                                {shopDetail?.plan === "PAID" && !isTrial && !s.paidAccessCovered
+                                  && ` · ${t("admin.serviceAwaitingPayment")}`}
+                              </span>
                             )}
                             {s.globallyBanned && (
                               <span className="text-xs font-normal text-red-500 ml-2">{t("admin.serviceBannedTag")}</span>
@@ -1664,9 +1725,10 @@ export default function AdminPage() {
                   </div>
                   {platformConfig.upgradeContactEnabled && platformConfig.upgradeContactPhone ? (
                     <a
-                      href={`https://wa.me/${platformConfig.upgradeContactPhone.replace(/\D/g, "")}?text=${encodeURIComponent(
-                        `PAID plan upgrade request: ${shopDetail?.name ?? shopCode} (${shopCode})`
-                      )}`}
+                      href={supportWhatsAppHref(
+                        "PAID plan/payment",
+                        "Please help me with PAID service access and payment."
+                      )}
                       target="_blank"
                       rel="noreferrer"
                       className="mb-3 flex w-full items-center justify-between rounded-xl border border-brand/20 bg-brand/5 px-4 py-3 transition hover:bg-brand/10"
@@ -1678,7 +1740,11 @@ export default function AdminPage() {
                       <span className="ml-3 text-sm font-semibold text-brand">{t("admin.upgradeContactAction")}</span>
                     </a>
                   ) : (
-                    <a href={`mailto:${t("admin.upgradeEmail")}?subject=Upgrade to PAID - ${shopDetail?.name ?? shopCode}`}
+                    <a href={supportEmailHref(
+                      t("admin.upgradeEmail"),
+                      "Upgrade to PAID",
+                      "Please help me with PAID service access and payment."
+                    )}
                       className="mb-3 flex w-full items-center justify-between rounded-xl border border-brand/20 bg-brand/5 px-4 py-3 transition hover:bg-brand/10">
                       <div className="text-left">
                         <p className="text-xs text-gray-400">Email us</p>
@@ -1814,6 +1880,7 @@ export default function AdminPage() {
                       t("admin.requestModalDetail1"),
                       t("admin.requestModalDetail2"),
                       t("admin.requestModalDetail3"),
+                      t("admin.requestModalDetail4"),
                     ].map((item: string, i: number) => (
                       <div key={i} className="flex items-center gap-3">
                         <span className="w-5 h-5 bg-brand/10 text-brand rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0">
@@ -1825,15 +1892,33 @@ export default function AdminPage() {
                   </div>
 
                   {/* Email CTA */}
+                  {platformConfig.upgradeContactEnabled && platformConfig.upgradeContactPhone && (
+                    <a
+                      href={supportWhatsAppHref("Support/request", "Please describe your request or issue.")}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mb-3 flex w-full items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 transition hover:bg-emerald-100"
+                    >
+                      <span>
+                        <span className="block text-xs text-gray-500">{t("support.whatsappLabel")}</span>
+                        <span className="text-sm font-bold text-emerald-700">{platformConfig.upgradeContactPhone}</span>
+                      </span>
+                      <span className="text-sm font-semibold text-emerald-700">{t("admin.upgradeContactAction")}</span>
+                    </a>
+                  )}
                   <a
-                    href={`mailto:${t("admin.requestModalEmail")}?subject=${encodeURIComponent(t("admin.requestModalEmailSubject"))}`}
-                    className="flex items-center justify-between w-full bg-brand/5 hover:bg-brand/10 border border-brand/20 rounded-xl px-4 py-3 transition mb-4"
+                    href={supportEmailHref(
+                      t("admin.requestModalEmail"),
+                      t("admin.requestModalEmailSubject"),
+                      "Please describe your request or issue."
+                    )}
+                    className="mb-4 flex w-full items-center justify-between rounded-xl border border-brand/20 bg-brand/5 px-4 py-3 transition hover:bg-brand/10"
                   >
                     <div className="text-left">
                       <p className="text-xs text-gray-400">{t("admin.requestModalEmailLabel")}</p>
                       <p className="text-sm font-bold text-brand">{t("admin.requestModalEmail")}</p>
                     </div>
-                    <svg className="w-4 h-4 text-brand flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4 flex-shrink-0 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
                   </a>

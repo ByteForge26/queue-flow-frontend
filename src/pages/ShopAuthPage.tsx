@@ -3,11 +3,11 @@
 // (Header comment block collapsed in screenshots — original comments
 //  above this point were not visible and are not reconstructed here.)
 // =====================================================================
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
-import { login, ownerSignup } from "../lib/api";
+import { getPlatformConfig, login, ownerSignup } from "../lib/api";
 import { saveAuth } from "../lib/auth";
 import type { AuthDto } from "../lib/types";
 import { Button, Card } from "../components/ui";
@@ -100,10 +100,23 @@ export default function ShopAuthPage() {
 
   // showForgotPw — true hone par "Forgot Password" instructions modal open hota hai
   const [showForgotPw, setShowForgotPw] = useState(false);
+  const [supportContact, setSupportContact] = useState<{ enabled: boolean; phone: string }>({
+    enabled: false,
+    phone: "",
+  });
 
   // geoFilled — ye flag ensure karta hai ki geolocation se auto-fill sirf ek baar ho
   // (component re-render pe baar baar override na ho)
   const [geoFilled, setGeoFilled] = useState(false);
+
+  useEffect(() => {
+    getPlatformConfig()
+      .then((config) => setSupportContact({
+        enabled: config.upgradeContactEnabled,
+        phone: config.upgradeContactPhone ?? "",
+      }))
+      .catch((cause: unknown) => console.error("Could not load support contact:", cause));
+  }, []);
 
   // Geolocation auto-fill logic:
   // Jab geo loading khatam ho aur abhi tak fill nahi hua ho, tab country aur city
@@ -542,7 +555,7 @@ export default function ShopAuthPage() {
       {/* ========================================================= */}
       {showForgotPw && (
         <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center px-4 z-50">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-sm pb-safe">
+          <div className="max-h-[90dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl bg-white pb-safe shadow-2xl sm:rounded-2xl">
 
             {/* Modal Header: icon + title + subtitle */}
             <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-t-3xl sm:rounded-t-2xl px-6 pt-6 pb-4 text-center border-b border-amber-100">
@@ -577,9 +590,39 @@ export default function ShopAuthPage() {
                 ))}
               </div>
 
-              {/* Email CTA button — support email pe mailto: link open karta hai */}
+              {/* WhatsApp CTA supplies the same identity details requested by the email instructions. */}
+              {supportContact.enabled && supportContact.phone && (
+                <a
+                  href={`https://wa.me/${supportContact.phone.replace(/\D/g, "")}?text=${encodeURIComponent([
+                    "Password reset request",
+                    `Shop name: [${t("auth.forgotPwDetail1")}]`,
+                    `Shop code: [${t("auth.forgotPwDetail2")}]`,
+                    `Registered phone: [${t("auth.forgotPwDetail3")}]`,
+                    `Owner username: ${username.trim() || `[${t("auth.forgotPwDetail4")}]`}`,
+                    `Recovery code: [${t("auth.forgotPwDetail5")}]`,
+                    "Please help me reset the owner password.",
+                  ].join("\n"))}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 flex w-full items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 transition hover:bg-emerald-100"
+                >
+                  <span className="text-left">
+                    <span className="block text-xs text-gray-500">{t("support.whatsappLabel")}</span>
+                    <span className="break-all text-sm font-bold text-emerald-700">{supportContact.phone}</span>
+                  </span>
+                  <span className="ml-3 shrink-0 text-sm font-semibold text-emerald-700">{t("admin.upgradeContactAction")}</span>
+                </a>
+              )}
+              {/* Email CTA uses the same reset details in its prefilled message body. */}
               <a
-                href={`mailto:${t("auth.forgotPwEmail")}?subject=Password Reset Request`}
+                href={`mailto:${t("auth.forgotPwEmail")}?subject=${encodeURIComponent("Password Reset Request")}&body=${encodeURIComponent([
+                  `Shop name: [${t("auth.forgotPwDetail1")}]`,
+                  `Shop code: [${t("auth.forgotPwDetail2")}]`,
+                  `Registered phone: [${t("auth.forgotPwDetail3")}]`,
+                  `Owner username: ${username.trim() || `[${t("auth.forgotPwDetail4")}]`}`,
+                  `Recovery code: [${t("auth.forgotPwDetail5")}]`,
+                  "Please help me reset the owner password.",
+                ].join("\n"))}`}
                 className="mt-4 flex items-center justify-between w-full bg-brand/5 hover:bg-brand/10 border border-brand/20 rounded-xl px-4 py-3 transition"
               >
                 <div className="text-left">
