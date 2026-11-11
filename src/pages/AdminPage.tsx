@@ -1647,8 +1647,8 @@ export default function AdminPage() {
 
             {/* ── SUPPORT TAB ── */}
             {adminTab === "support" && (
-              <div className="flex justify-center">
-                <Card className="w-full max-w-sm border-t-4 border-t-amber-400 py-8 px-6 text-center">
+              <div className="mx-auto grid w-full max-w-lg gap-4">
+                <Card className="border-t-4 border-t-amber-400 py-8 px-6 text-center">
                   <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl">💬</span>
                   </div>
@@ -1657,6 +1657,35 @@ export default function AdminPage() {
                   <Button onClick={() => setRequestModal("open")} className="w-full">
                     {t("admin.requestRaise")}
                   </Button>
+                </Card>
+                <Card className="space-y-3">
+                  <p className="font-semibold text-slate-800">{t("support.queryTitle")}</p>
+                  {platformConfig.upgradeContactEnabled && platformConfig.upgradeContactPhone ? (
+                    <a
+                      href={supportWhatsAppHref("Support/query", "Please describe your query or issue.")}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 transition hover:bg-emerald-100"
+                    >
+                      <span className="min-w-0 text-left">
+                        <span className="block text-xs text-gray-500">{t("support.whatsappLabel")}</span>
+                        <span className="break-all text-sm font-bold text-emerald-700">{platformConfig.upgradeContactPhone}</span>
+                      </span>
+                      <span className="shrink-0 text-sm font-semibold text-emerald-700">{t("admin.upgradeContactAction")}</span>
+                    </a>
+                  ) : (
+                    <p className="text-sm text-slate-500">{t("support.whatsappUnavailable")}</p>
+                  )}
+                  <a
+                    href={supportEmailHref(
+                      t("admin.requestModalEmail"),
+                      t("admin.requestModalEmailSubject"),
+                      "Please describe your query or issue."
+                    )}
+                    className="block break-all text-sm font-medium text-brand hover:underline"
+                  >
+                    {t("admin.requestModalEmailLabel")}: {t("admin.requestModalEmail")}
+                  </a>
                 </Card>
               </div>
             )}
