@@ -238,15 +238,24 @@ export default function OrderPage() {
       }];
     });
 
+  const selectedItemSummary = config.items.flatMap((item: CatalogItemDto) => {
+    const quantity = visibleQty(item);
+    if (quantity <= 0) return [];
+    const optionName = selectedOptions[item.id];
+    const unitPrice = item.options?.find((option) => option.name === optionName)?.price ?? item.price;
+    return [{
+      id: item.id,
+      name: item.name,
+      optionName,
+      quantity,
+      unitPrice,
+      lineTotal: unitPrice * quantity,
+    }];
+  });
+
   // Live total — selected items ka price * qty
   // Har item ka price uski quantity se multiply karke sab add karo
-  const orderTotal: number = config.items.reduce(
-    (sum: number, item: CatalogItemDto): number => {
-      const selectedOption = item.options?.find((option) => option.name === selectedOptions[item.id]);
-      return sum + visibleQty(item) * (selectedOption?.price ?? item.price);
-    },
-    0
-  );
+  const orderTotal: number = selectedItemSummary.reduce((sum, item) => sum + item.lineTotal, 0);
 
   // requiredOk: Saare required fields fill hain ya nahi
   // Har required field ki value trim karke check karo kuch hai ya nahi
@@ -686,6 +695,30 @@ export default function OrderPage() {
             </>
           )}
         </Card>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* SELECTED ITEMS — total se pehle selected items aur unka amount dikhaye */}
+        {/* ------------------------------------------------------------------ */}
+        {selectedItemSummary.length > 0 && (
+          <Card className="mb-3 border border-indigo-100 bg-indigo-50/40 p-4 sm:p-5">
+            <h2 className="mb-2 text-sm font-semibold text-slate-800">{t("order.selectedItems")}</h2>
+            <ul className="divide-y divide-indigo-100">
+              {selectedItemSummary.map((item) => (
+                <li key={item.id} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-medium text-slate-800">
+                      {item.name}{item.optionName ? ` · ${item.optionName}` : ""}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      ₹{item.unitPrice} × {item.quantity}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-sm font-semibold text-slate-800">₹{item.lineTotal}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
 
         {/* ------------------------------------------------------------------ */}
         {/* ORDER TOTAL — Sirf tab dikhao jab catalog items hain */}

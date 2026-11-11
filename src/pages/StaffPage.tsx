@@ -94,6 +94,24 @@ export default function StaffPage(): Element {
   // error — agar koi API call fail ho jaaye to error message string store karta hai
   // null hone par error banner nahi dikhta
   const [error, setError] = useState<string | null>(null);
+  const [updatingTicketIds, setUpdatingTicketIds] = useState<Set<number>>((): Set<number> => new Set());
+  const updatingTicketIdsRef = useRef<Set<number>>(new Set());
+
+  function beginTicketUpdate(ticketId: number): boolean {
+    if (updatingTicketIdsRef.current.has(ticketId)) return false;
+    const next = new Set(updatingTicketIdsRef.current);
+    next.add(ticketId);
+    updatingTicketIdsRef.current = next;
+    setUpdatingTicketIds(next);
+    return true;
+  }
+
+  function endTicketUpdate(ticketId: number): void {
+    const next = new Set(updatingTicketIdsRef.current);
+    next.delete(ticketId);
+    updatingTicketIdsRef.current = next;
+    setUpdatingTicketIds(next);
+  }
 
   const [newOrderAlertsEnabled, setNewOrderAlertsEnabled] = useState(false);
   const [newOrderAlertError, setNewOrderAlertError] = useState<string | null>(null);
@@ -333,12 +351,15 @@ export default function StaffPage(): Element {
     }
 
     // Seedha status update (e.g. ACCEPTED -> kuch aur jo IN_PROGRESS ya COMPLETED nahi)
+    if (!beginTicketUpdate(ticket.id)) return;
     setError(null);
     try {
       await updateStatus(sectionCode, ticket.id, next.status);
       refresh();
     } catch {
       setError(t("staff.actionFailed", { id: ticket.id, label: next.label }));
+    } finally {
+      endTicketUpdate(ticket.id);
     }
   }
 
@@ -353,12 +374,15 @@ export default function StaffPage(): Element {
     if (!startTicket) return;
     const ticket: TicketDto = startTicket;
     setStartTicket(null); // Modal band karo
+    if (!beginTicketUpdate(ticket.id)) return;
     setError(null);
     try {
       await updateStatus(sectionCode, ticket.id, "IN_PROGRESS");
       refresh();
     } catch {
       setError(t("staff.actionFailed", { id: ticket.id, label: t("staff.actionInProgress") }));
+    } finally {
+      endTicketUpdate(ticket.id);
     }
   }
 
@@ -373,6 +397,7 @@ export default function StaffPage(): Element {
     if (!paymentTicket) return;
     const ticket: TicketDto = paymentTicket;
     setPaymentTicket(null); // Modal band karo (double-click prevent)
+    if (!beginTicketUpdate(ticket.id)) return;
     setError(null);
     try {
       // Agar amount field khali hai to null bhejo, warna number mein convert karo
@@ -383,7 +408,24 @@ export default function StaffPage(): Element {
       });
       refresh();
     } catch {
+      try {
+        const [currentQueue, currentHistory] = await Promise.all([
+          getQueue(sectionCode),
+          getStaffHistory(sectionCode),
+        ]);
+        setQueue(currentQueue);
+        setHistory(currentHistory);
+        if (currentHistory.orders.some((order) => order.id === ticket.id && order.status === "COMPLETED")) {
+          setError(null);
+          refresh();
+          return;
+        }
+      } catch (reconcileError: unknown) {
+        console.error("Could not reconcile the queue after a completion request failed.", reconcileError);
+      }
       setError(t("staff.completeFailed", { id: ticket.id }));
+    } finally {
+      endTicketUpdate(ticket.id);
     }
   }
 
@@ -398,12 +440,15 @@ export default function StaffPage(): Element {
     if (!paymentTicket) return;
     const ticket: TicketDto = paymentTicket;
     setPaymentTicket(null); // Modal band karo
+    if (!beginTicketUpdate(ticket.id)) return;
     setError(null);
     try {
       await markPaymentPending(sectionCode, ticket.id, payPendingReason.trim());
       refresh();
     } catch {
       setError(t("staff.completeFailed", { id: ticket.id }));
+    } finally {
+      endTicketUpdate(ticket.id);
     }
   }
 
@@ -413,12 +458,15 @@ export default function StaffPage(): Element {
 
   // cancel — seedha CANCELLED status set karta hai, koi confirmation nahi (button click se hi)
   async function cancel(ticket: TicketDto): Promise<void> {
+    if (!beginTicketUpdate(ticket.id)) return;
     setError(null);
     try {
       await updateStatus(sectionCode, ticket.id, "CANCELLED");
       refresh();
     } catch {
       setError(t("staff.cancelFailed", { id: ticket.id }));
+    } finally {
+      endTicketUpdate(ticket.id);
     }
   }
 
@@ -647,6 +695,7 @@ export default function StaffPage(): Element {
             {queue.map((ord: TicketDto): Element => {
               // Har order ke liye nextStep compute karo — button label ke liye
               const next: { status: TicketStatus; label: string } | null = nextStep(ord.status);
+              const isUpdating = updatingTicketIds.has(ord.id);
               return (
                 // ORDER CARD — ek ticket ki saari info + action buttons
                 <Card key={ord.id} className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -686,13 +735,14 @@ export default function StaffPage(): Element {
                     {/* Advance button — next step ka label dikhata hai (e.g. "Start", "Ready") */}
                     {/* Sirf tab dikhta hai jab koi agla step ho */}
                     {next && (
-                      <Button variant="staff" onClick={(): Promise<void> => advance(ord)}>
+                      <Button variant="staff" disabled={isUpdating} onClick={(): Promise<void> => advance(ord)}>
                         {next.label}
                       </Button>
                     )}
                     {/* Cancel button — small red text link */}
                     <button
                       onClick={(): Promise<void> => cancel(ord)}
+                      disabled={isUpdating}
                       className="text-xs text-red-400 hover:text-red-600"
                     >
                       {t("common.cancel")}
