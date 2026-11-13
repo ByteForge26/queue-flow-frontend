@@ -872,6 +872,11 @@ export default function SuperAdminPage(): Element {
                       <p className="text-sm font-bold text-emerald-700">{formatMoney(request.amount, request.currency)}</p>
                     </div>
                     <p className="mt-2 text-xs text-gray-500">Owner selected these services; verify payment before approval:</p>
+                    {request.additionalAccess && (
+                      <p className="mt-1 text-xs font-medium text-indigo-700">
+                        Additional service access · separate 30 days from approval
+                      </p>
+                    )}
                     <div className="mt-2 space-y-1">
                       {request.sections.map((section) => (
                         <label key={section.code} className="flex items-center gap-2 text-sm text-gray-700">
@@ -939,7 +944,7 @@ export default function SuperAdminPage(): Element {
                             setServiceRequestError("");
                           }}
                           disabled={resolvingRequestId !== null}
-                          className="rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+                          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-50"
                         >
                           Cancel
                         </button>

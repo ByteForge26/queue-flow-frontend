@@ -285,19 +285,24 @@ export default function AdminPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function submitAccessRequest(): Promise<void> {
-    if (requestSelectedCodes.length === 0 || requestSubmitting) return;
+  async function submitAccessRequestForCodes(sectionCodes: string[]): Promise<void> {
+    if (sectionCodes.length === 0 || requestSubmitting) return;
     setRequestSubmitting(true);
     setRequestMsg(null);
     try {
-      const request = await submitServiceAccessRequest(requestSelectedCodes);
+      const request = await submitServiceAccessRequest(sectionCodes);
       setServiceAccessRequest(request);
       setRequestMsg(t("admin.serviceRequestSubmitted"));
-    } catch {
-      setRequestMsg(t("admin.serviceRequestFailed"));
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string; error?: string } } };
+      setRequestMsg(err.response?.data?.message || err.response?.data?.error || t("admin.serviceRequestFailed"));
     } finally {
       setRequestSubmitting(false);
     }
+  }
+
+  async function submitAccessRequest(): Promise<void> {
+    await submitAccessRequestForCodes(requestSelectedCodes);
   }
 
   useEffect(() => {
@@ -514,6 +519,8 @@ export default function AdminPage() {
         setSectionMsg(t("admin.duplicateCustomService"));
       } else if (status === 409) {
         setSectionMsg(t("admin.dupService"));
+      } else if (serverMsg) {
+        setSectionMsg(serverMsg);
       } else {
         setSectionMsg(t("admin.serviceAddFailed"));
       }
@@ -1123,6 +1130,7 @@ export default function AdminPage() {
                   {available.length === 0 && <p className="mt-2 text-xs text-gray-500">{t("admin.noServiceTypesAvailable")}</p>}
                   {sectionMsg && <p className={`text-xs mt-2 ${sectionMsg === t("admin.serviceTypeBanned")
                     ? "text-red-500 font-medium" : "text-gray-500"}`}>{sectionMsg}</p>}
+                  {requestMsg && <p className="mt-2 text-xs text-amber-800">{requestMsg}</p>}
                 </Card>
               );
             })()}
@@ -1132,7 +1140,8 @@ export default function AdminPage() {
               return (
                 <div className={`space-y-3 ${(overview?.sections.length ?? 0) > 3 ? "max-h-[560px] overflow-y-auto pr-1" : ""}`}>
                   {overview?.sections.map((s) => {
-                    const enableBlocked = s.globallyBanned;
+                    const needsPaidRequest = shopDetail?.plan === "PAID" && !isTrial && !s.paidAccessCovered;
+                    const enableBlocked = s.globallyBanned || (!s.active && needsPaidRequest);
                     const deletionDate: string | null = s.deletionScheduledAt ? new Date(s.deletionScheduledAt).toLocaleDateString() : null;
                     return (
                       <Card key={s.sectionCode} className={`${SECTION_BORDER[s.industryType] ?? SECTION_BORDER.OTHER} ${s.active ? "" : "opacity-60"}`}>
@@ -1187,10 +1196,34 @@ export default function AdminPage() {
                             <button
                               onClick={() => !enableBlocked && toggleSection(s.sectionCode, !s.active)}
                               disabled={enableBlocked}
+                              title={needsPaidRequest && !s.globallyBanned
+                                ? t("admin.serviceAwaitingPayment")
+                                : undefined}
                               className={`inline-flex min-h-9 items-center ${enableBlocked ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:underline"}`}
                             >
                               {s.active ? t("common.disable") : t("common.enable")}
                             </button>
+                            {!s.active && needsPaidRequest && !s.globallyBanned && (
+                              serviceAccessRequest?.status === "PENDING" ? (
+                                <span className="inline-flex min-h-9 items-center text-xs font-medium text-amber-700">
+                                  {serviceAccessRequest.sections.some((section) => section.code === s.sectionCode)
+                                    ? t("admin.serviceRequestPending")
+                                    : t("admin.anotherServiceRequestPending")}
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => void submitAccessRequestForCodes([s.sectionCode])}
+                                  disabled={requestSubmitting || !Number.isFinite(servicePrice) || servicePrice <= 0}
+                                  className="inline-flex min-h-9 items-center rounded-lg bg-brand/10 px-2.5 font-medium text-brand hover:bg-brand/20 disabled:opacity-50"
+                                >
+                                  {requestSubmitting
+                                    ? t("admin.serviceRequestSending")
+                                    : t("admin.requestPaidAccessPrice", {
+                                      amount: formatPlanAmount(servicePrice, platformConfig.paidCurrency),
+                                    })}
+                                </button>
+                              )
+                            )}
                             {s.hasOrders ? (
                               <button onClick={() => handleDeleteClick(s)} className="inline-flex min-h-9 items-center text-red-400 hover:text-red-600">
                                 {t("common.delete")}
@@ -1208,6 +1241,20 @@ export default function AdminPage() {
                             </button>
                           </div>
                         </div>
+                        {serviceAccessRequest?.status === "REJECTED"
+                          && serviceAccessRequest.sections.some((section) => section.code === s.sectionCode) && (
+                          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                            <span className="font-semibold">{t("admin.serviceRequestRejected")}</span>
+                            {serviceAccessRequest.rejectionReason && <span>: {serviceAccessRequest.rejectionReason}</span>}
+                          </div>
+                        )}
+                        {s.active && s.paidAccessCovered && s.paidAccessUntil && (
+                          <p className="mb-2 text-xs text-slate-500">
+                            {t("admin.serviceAccessValidUntil", {
+                              date: new Date(s.paidAccessUntil).toLocaleDateString(),
+                            })}
+                          </p>
+                        )}
                         {sectionInfoOpen === s.sectionCode && (
                           <div className="mb-3 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-xs text-gray-600 space-y-1.5">
                             {!s.globallyBanned && <p><span className="font-semibold text-brand">Live orders →</span>

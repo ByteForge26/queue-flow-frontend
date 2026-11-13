@@ -364,6 +364,7 @@ export interface ServiceAccessRequestDto {
   status: "PENDING" | "APPROVED" | "REJECTED";
   createdAt: string;
   rejectionReason: string | null;
+  additionalAccess: boolean;
 }
 
 // UpdateShopCommand: Admin jab shop settings update karta hai tab bheja jaane wala body.
@@ -445,6 +446,7 @@ export interface SectionStatsDto {
   globallyBanned: boolean; // Platform ne ban kiya hai
   deletionScheduledAt: string | null; // Scheduled deletion time - null agar koi plan nahi
   paidAccessCovered: boolean; // Current PAID plan ya trial mein service included hai
+  paidAccessUntil: string | null;
 }
 
 // GlobalBanStatusDto: Platform admin ka ban/restriction status.
